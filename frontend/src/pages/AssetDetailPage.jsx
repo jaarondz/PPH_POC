@@ -28,6 +28,7 @@ import LinkProjectToAssetDialog from "../components/LinkProjectToAssetDialog.jsx
 import LinkAccomplishmentToAssetDialog from "../components/LinkAccomplishmentToAssetDialog.jsx";
 import EditAssetDialog from "../components/EditAssetDialog.jsx";
 import CreateProjectDialog from "../components/CreateProjectDialog.jsx";
+import DocumentsPanel from "../components/DocumentsPanel.jsx";
 
 
 const ASSET_TYPE_LABELS = {
@@ -234,6 +235,7 @@ export default function AssetDetailPage() {
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label={`Related Projects (${projectLinks.length})`} />
           <Tab label={`Related Accomplishments (${accomplishmentLinks.length})`} />
+          <Tab label="Documents" />
         </Tabs>
 
   <TabPanel value={tab} index={0}>
@@ -398,6 +400,10 @@ export default function AssetDetailPage() {
             </TableBody>
           </Table>
           </Stack>
+        </TabPanel>
+
+        <TabPanel value={tab} index={2}>
+          <DocumentsPanel targetType="ASSET" targetId={assetId} />
         </TabPanel>
 
         <LinkAccomplishmentToAssetDialog

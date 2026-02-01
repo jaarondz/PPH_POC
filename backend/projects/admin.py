@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Project, ProjectAssetLink, ProjectTask
+from .models import Project, ProjectAssetLink, ProjectTask, ProjectMilestone
 
 
 class ProjectAssetLinkInline(admin.TabularInline):
@@ -15,6 +15,14 @@ class ProjectTaskInline(admin.TabularInline):
     extra = 1
     autocomplete_fields = ("assigned_to",)
     fields = ("description", "status", "assigned_to", "start_date", "end_date")
+    show_change_link = True
+
+
+class ProjectMilestoneInline(admin.TabularInline):
+    model = ProjectMilestone
+    extra = 1
+    autocomplete_fields = ("assigned_to",)
+    fields = ("title", "status", "assigned_to", "due_date")
     show_change_link = True
 
 
@@ -36,7 +44,7 @@ class ProjectAdmin(admin.ModelAdmin):
     list_filter = ("project_type", "status", "priority", "owning_org_unit")
     search_fields = ("name", "summary", "sponsor")
     ordering = ("-updated_at", "name")
-    inlines = [ProjectAssetLinkInline, ProjectTaskInline]
+    inlines = [ProjectAssetLinkInline, ProjectTaskInline, ProjectMilestoneInline]
 
 
 @admin.register(ProjectAssetLink)
@@ -52,4 +60,12 @@ class ProjectTaskAdmin(admin.ModelAdmin):
     list_display = ("project", "status", "assigned_to", "start_date", "end_date", "updated_at")
     list_filter = ("status", "project")
     search_fields = ("project__name", "description", "assigned_to__username")
+    autocomplete_fields = ("project", "assigned_to")
+
+
+@admin.register(ProjectMilestone)
+class ProjectMilestoneAdmin(admin.ModelAdmin):
+    list_display = ("project", "title", "status", "assigned_to", "due_date", "updated_at")
+    list_filter = ("status", "project")
+    search_fields = ("project__name", "title", "description")
     autocomplete_fields = ("project", "assigned_to")

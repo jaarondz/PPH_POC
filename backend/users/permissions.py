@@ -60,6 +60,28 @@ class ProjectPermission(BasePermission):
         return False
 
 
+class ProjectChildPermission(BasePermission):
+    """
+    Permission for objects related to a project (e.g., milestones).
+    """
+
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return True
+
+        if can_modify_all(request.user):
+            return True
+
+        if user_in_role(request.user, ROLE_PROJECT_MANAGER):
+            project = getattr(obj, "project", None)
+            return project and project.assigned_to_id == request.user.id
+
+        return False
+
+
 class AccomplishmentPermission(BasePermission):
     """
     Everyone authenticated can view all accomplishments.

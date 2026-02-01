@@ -35,10 +35,13 @@ import {
   GanttTaskListTable,
 } from "../components/GanttTaskListTable.jsx";
 import LinkAssetToProjectDialog from "../components/LinkAssetToProjectDialog.jsx";
+import DocumentsPanel from "../components/DocumentsPanel.jsx";
 import EditProjectDialog from "../components/EditProjectDialog.jsx";
 import CreateAccomplishmentDialog from "../components/CreateAccomplishmentDialog.jsx";
 import CreateProjectTaskDialog from "../components/CreateProjectTaskDialog.jsx";
 import EditProjectTaskDialog from "../components/EditProjectTaskDialog.jsx";
+import CreateProjectMilestoneDialog from "../components/CreateProjectMilestoneDialog.jsx";
+import EditProjectMilestoneDialog from "../components/EditProjectMilestoneDialog.jsx";
 
 const STATUS_LABELS = {
   INTAKE: "Intake",
@@ -74,6 +77,13 @@ const TASK_STATUS_LABELS = {
   DONE: "Done",
 };
 
+const MILESTONE_STATUS_LABELS = {
+  PLANNED: "Planned",
+  IN_PROGRESS: "In Progress",
+  AT_RISK: "At Risk",
+  COMPLETE: "Complete",
+};
+
 
 function TabPanel({ value, index, children }) {
   if (value !== index) return null;
@@ -102,12 +112,16 @@ export default function ProjectDetailPage() {
   const [assetLinks, setAssetLinks] = React.useState([]);
   const [accomplishmentLinks, setAccomplishmentLinks] = React.useState([]);
   const [tasks, setTasks] = React.useState([]);
+  const [milestones, setMilestones] = React.useState([]);
   const [linkAssetDialogOpen, setLinkAssetDialogOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
   const [createAccomplishmentOpen, setCreateAccomplishmentOpen] = React.useState(false);
   const [createTaskOpen, setCreateTaskOpen] = React.useState(false);
   const [editTaskOpen, setEditTaskOpen] = React.useState(false);
+  const [createMilestoneOpen, setCreateMilestoneOpen] = React.useState(false);
+  const [editMilestoneOpen, setEditMilestoneOpen] = React.useState(false);
   const [selectedTask, setSelectedTask] = React.useState(null);
+  const [selectedMilestone, setSelectedMilestone] = React.useState(null);
   const [taskStatusFilter, setTaskStatusFilter] = React.useState("ALL");
   const [taskGanttView, setTaskGanttView] = React.useState(ViewMode.Week);
   const [taskTab, setTaskTab] = React.useState(0);
@@ -153,6 +167,16 @@ export default function ProjectDetailPage() {
     }
   }, [projectId, taskStatusFilter]);
 
+  const loadMilestones = React.useCallback(async () => {
+    try {
+      const data = await apiGet(`/api/project-milestones/?project=${projectId}`);
+      const rows = Array.isArray(data) ? data : data.results || [];
+      setMilestones(rows);
+    } catch (e) {
+      setError(e.message || "Failed to load milestones");
+    }
+  }, [projectId]);
+
   React.useEffect(() => {
     loadProjectDetail();
   }, [loadProjectDetail]);
@@ -161,6 +185,11 @@ export default function ProjectDetailPage() {
     if (!projectId) return;
     loadTasks();
   }, [projectId, loadTasks]);
+
+  React.useEffect(() => {
+    if (!projectId) return;
+    loadMilestones();
+  }, [projectId, loadMilestones]);
 
   const ganttTasks = React.useMemo(() => {
     const today = new Date();
@@ -290,6 +319,95 @@ export default function ProjectDetailPage() {
               </Typography>
             </Box>
           </Stack>
+        </Stack>
+      </Paper>
+
+      <Paper sx={{ p: 2 }}>
+        <Stack spacing={2}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            justifyContent="space-between"
+            alignItems={{ xs: "stretch", sm: "center" }}
+          >
+            <Typography variant="h6">Milestones</Typography>
+            <Button variant="contained" onClick={() => setCreateMilestoneOpen(true)}>
+              Add Milestone
+            </Button>
+          </Stack>
+
+          <TableContainer component={Paper}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Milestone</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Due Date</TableCell>
+                  <TableCell>Owner</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {milestones.map((m) => {
+                  const owner = m.assigned_to_detail;
+                  const ownerLabel = owner
+                    ? [owner.first_name, owner.last_name].filter(Boolean).join(" ") ||
+                      owner.username
+                    : "—";
+
+                  return (
+                    <TableRow key={m.id} hover>
+                      <TableCell>
+                        <Stack spacing={0.5}>
+                          <Typography sx={{ fontWeight: 600 }}>{m.title}</Typography>
+                          {m.description ? (
+                            <Typography variant="caption" color="text.secondary">
+                              {m.description}
+                            </Typography>
+                          ) : null}
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        {MILESTONE_STATUS_LABELS[m.status] || m.status}
+                      </TableCell>
+                      <TableCell>{m.due_date || "—"}</TableCell>
+                      <TableCell>{ownerLabel}</TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setSelectedMilestone(m);
+                              setEditMilestoneOpen(true);
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={async () => {
+                              await apiDelete(`/api/project-milestones/${m.id}/`);
+                              loadMilestones();
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+
+                {milestones.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5}>
+                      <Typography sx={{ py: 2 }}>No milestones yet.</Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Stack>
       </Paper>
 
@@ -521,6 +639,7 @@ export default function ProjectDetailPage() {
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label={`Linked Assets (${assetLinks.length})`} />
           <Tab label={`Related Accomplishments (${accomplishmentLinks.length})`} />
+          <Tab label="Documents" />
         </Tabs>
 
         <TabPanel value={tab} index={0}>
@@ -636,6 +755,10 @@ export default function ProjectDetailPage() {
             </Table>
           </Stack>
         </TabPanel>
+
+        <TabPanel value={tab} index={2}>
+          <DocumentsPanel targetType="PROJECT" targetId={projectId} />
+        </TabPanel>
       </Paper>
 
       <LinkAssetToProjectDialog
@@ -690,6 +813,26 @@ export default function ProjectDetailPage() {
         onUpdated={() => {
           setEditTaskOpen(false);
           loadTasks();
+        }}
+      />
+
+      <CreateProjectMilestoneDialog
+        open={createMilestoneOpen}
+        onClose={() => setCreateMilestoneOpen(false)}
+        projectId={projectId}
+        onCreated={() => {
+          setCreateMilestoneOpen(false);
+          loadMilestones();
+        }}
+      />
+
+      <EditProjectMilestoneDialog
+        open={editMilestoneOpen}
+        onClose={() => setEditMilestoneOpen(false)}
+        milestone={selectedMilestone}
+        onUpdated={() => {
+          setEditMilestoneOpen(false);
+          loadMilestones();
         }}
       />
     </Stack>

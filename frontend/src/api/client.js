@@ -75,3 +75,29 @@ export async function apiPatch(path, body) {
   }
   return data;
 }
+
+export async function apiPostForm(path, formData) {
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    headers: {
+      ...(token ? { Authorization: `Token ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  const dataText = await res.text();
+  let data = null;
+  if (dataText) {
+    try {
+      data = JSON.parse(dataText);
+    } catch {
+      data = null;
+    }
+  }
+
+  if (!res.ok) {
+    throw new Error(`POST ${path} failed (${res.status}): ${data?.detail || dataText}`);
+  }
+  return data;
+}

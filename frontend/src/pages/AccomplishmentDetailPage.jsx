@@ -25,6 +25,7 @@ import { apiGet, apiDelete } from "../api/client.js";
 import LinkAssetToAccomplishmentDialog from "../components/LinkAssetToAccomplishmentDialog.jsx";
 import LinkProjectToAccomplishmentDialog from "../components/LinkProjectToAccomplishmentDialog.jsx";
 import EditAccomplishmentDialog from "../components/EditAccomplishmentDialog.jsx";
+import DocumentsPanel from "../components/DocumentsPanel.jsx";
 
 const IMPACT_LABELS = {
   RISK: "Risk Reduction",
@@ -219,6 +220,7 @@ export default function AccomplishmentDetailPage() {
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label={`Linked Assets (${assetLinks.length})`} />
           <Tab label={`Linked Projects (${projectLinks.length})`} />
+          <Tab label="Documents" />
         </Tabs>
 
         <TabPanel value={tab} index={0}>
@@ -355,6 +357,10 @@ export default function AccomplishmentDetailPage() {
               </Table>
             </TableContainer>
           </Stack>
+        </TabPanel>
+
+        <TabPanel value={tab} index={2}>
+          <DocumentsPanel targetType="ACCOMPLISHMENT" targetId={accomplishmentId} />
         </TabPanel>
       </Paper>
 

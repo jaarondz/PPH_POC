@@ -177,3 +177,50 @@ class ProjectTask(UUIDModel, TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.project.name}: {self.description[:60]}"
+
+
+class ProjectMilestone(UUIDModel, TimeStampedModel):
+    class Status(models.TextChoices):
+        PLANNED = "PLANNED", "Planned"
+        IN_PROGRESS = "IN_PROGRESS", "In Progress"
+        AT_RISK = "AT_RISK", "At Risk"
+        COMPLETE = "COMPLETE", "Complete"
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="milestones")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    due_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PLANNED)
+
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_milestones",
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_milestones_created",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_milestones_updated",
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["project", "status"]),
+            models.Index(fields=["assigned_to"]),
+            models.Index(fields=["due_date"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.project.name}: {self.title}"

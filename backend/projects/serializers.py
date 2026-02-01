@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Project, ProjectAssetLink, ProjectTask
+from .models import Project, ProjectAssetLink, ProjectTask, ProjectMilestone
 from assets.models import Asset
 
 User = get_user_model()
@@ -70,6 +70,22 @@ class ProjectTaskSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"end_date": "End date cannot be before start date."})
 
         return attrs
+
+
+class ProjectMilestoneSerializer(serializers.ModelSerializer):
+    project_detail = ProjectSummarySerializer(source="project", read_only=True)
+    assigned_to_detail = UserSummarySerializer(source="assigned_to", read_only=True)
+
+    class Meta:
+        model = ProjectMilestone
+        fields = "__all__"
+        read_only_fields = (
+            "id",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "updated_by",
+        )
 
 
 class ProjectSerializer(serializers.ModelSerializer):

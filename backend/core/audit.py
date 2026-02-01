@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Any, Dict
 from uuid import UUID
 
+from django.core.files.base import File
 from django.db import models
 
 from .models import AuditLog
@@ -19,6 +20,8 @@ def _model_has_field(model: type[models.Model], field_name: str) -> bool:
 
 
 def _serialize_value(value: Any) -> Any:
+    if isinstance(value, File):
+        return getattr(value, "name", None) or ""
     if isinstance(value, models.Model):
         return str(value.pk)
     if isinstance(value, (datetime, date, time)):

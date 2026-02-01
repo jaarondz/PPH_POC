@@ -1,8 +1,14 @@
 from rest_framework import viewsets, filters
 from core.audit import AuditedModelViewSetMixin
-from .models import Project, ProjectAssetLink, ProjectTask
-from .serializers import ProjectSerializer, ProjectAssetLinkSerializer, ProjectTaskSerializer
-from users.permissions import ProjectPermission
+from rest_framework.exceptions import PermissionDenied
+from .models import Project, ProjectAssetLink, ProjectTask, ProjectMilestone
+from .serializers import (
+    ProjectSerializer,
+    ProjectAssetLinkSerializer,
+    ProjectTaskSerializer,
+    ProjectMilestoneSerializer,
+)
+from users.permissions import ProjectPermission, ProjectChildPermission
 from users.roles import (
     can_modify_all,
     user_in_role,
@@ -67,3 +73,41 @@ class ProjectTaskViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
             qs = qs.filter(status=status)
 
         return qs
+
+
+class ProjectMilestoneViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
+    queryset = ProjectMilestone.objects.select_related("project", "assigned_to").all()
+    serializer_class = ProjectMilestoneSerializer
+    permission_classes = [ProjectChildPermission]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["title", "description", "project__name"]
+    ordering_fields = ["due_date", "status", "updated_at"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        project_id = self.request.query_params.get("project")
+        status = self.request.query_params.get("status")
+
+        if project_id:
+            qs = qs.filter(project_id=project_id)
+        if status:
+            qs = qs.filter(status=status)
+
+        user = self.request.user
+        if can_modify_all(user) or user_in_role(user, ROLE_PORTFOLIO_VIEWER) or user_in_role(user, ROLE_PROJECT_MANAGER):
+            return qs
+
+        return qs.filter(project__assigned_to=user)
+
+    def perform_create(self, serializer):
+        project = serializer.validated_data.get("project")
+        user = getattr(self.request, "user", None)
+
+        if project and not (
+            can_modify_all(user)
+            or user_in_role(user, ROLE_PORTFOLIO_VIEWER)
+            or (user_in_role(user, ROLE_PROJECT_MANAGER) and project.assigned_to_id == user.id)
+        ):
+            raise PermissionDenied("Not allowed to add milestones for this project.")
+
+        super().perform_create(serializer)

@@ -25,6 +25,7 @@ import { apiGet, apiDelete } from "../api/client.js";
 import EditReportDialog from "../components/EditReportDialog.jsx";
 import LinkAssetToReportDialog from "../components/LinkAssetToReportDialog.jsx";
 import LinkAccomplishmentToReportDialog from "../components/LinkAccomplishmentToReportDialog.jsx";
+import DocumentsPanel from "../components/DocumentsPanel.jsx";
 
 const STATUS_LABELS = {
   PLANNED: "Planned",
@@ -287,6 +288,7 @@ export default function ReportDetailPage() {
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label={`Linked Assets (${assetLinks.length})`} />
           <Tab label={`Linked Accomplishments (${accomplishmentLinks.length})`} />
+          <Tab label="Documents" />
         </Tabs>
 
         <TabPanel value={tab} index={0}>
@@ -421,6 +423,10 @@ export default function ReportDetailPage() {
               </Table>
             </TableContainer>
           </Stack>
+        </TabPanel>
+
+        <TabPanel value={tab} index={2}>
+          <DocumentsPanel targetType="REPORT" targetId={reportId} />
         </TabPanel>
       </Paper>
 
