@@ -1,4 +1,57 @@
-# Asset Inventory POC - Backend
+# Backend (Django)
+
+Asset Inventory POC backend API.
+
+## Requirements
+
+- Python 3.10+ recommended
+- A virtual environment tool (venv, conda, etc.)
+
+## Setup
+
+1. Create and activate a virtual environment.
+2. Install dependencies.
+
+```
+pip install -r requirements.txt
+```
+
+## Run locally
+
+From the backend directory:
+
+```
+python manage.py migrate
+python manage.py runserver
+```
+
+The API will be available at http://127.0.0.1:8000.
+
+## Environment
+
+Configuration is located in backend/config/settings.py. This project uses token auth.
+
+## Project apps
+
+- assets
+- projects
+- documents
+- reports
+- outcomes
+- users
+- core
+
+## Useful commands
+
+```
+python manage.py createsuperuser
+python manage.py makemigrations
+python manage.py migrate
+```
+
+## Notes
+
+The frontend expects the API base URL to be http://127.0.0.1:8000 unless overridden.# Asset Inventory POC - Backend
 
 Django REST API for managing assets, projects, outcomes, and users. The API is served under `/api/` and uses token authentication.
 

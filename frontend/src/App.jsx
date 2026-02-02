@@ -25,6 +25,7 @@ import ProjectsListPage from "./pages/ProjectsListPage.jsx";
 import ProjectsGanttPage from "./pages/ProjectsGanttPage.jsx";
 import ProjectDetailPage from "./pages/ProjectsDetailPage.jsx";
 import ProjectsExecutivePage from "./pages/ProjectsExecutivePage.jsx";
+import ProjectIntakePage from "./pages/ProjectIntakePage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import AccomplishmentsListPage from "./pages/AccomplishmentsListPage.jsx";
 import AccomplishmentDetailPage from "./pages/AccomplishmentDetailPage.jsx";
@@ -191,6 +192,19 @@ export default function App({ colorMode = "light", onToggleColorMode }) {
                 }}
               >
                 Project List
+              </Button>
+              <Button
+                variant="contained"
+                component={Link}
+                to="/projects/intake"
+                onClick={closeProjectsMenu}
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  "&:hover": { bgcolor: "primary.dark" },
+                }}
+              >
+                Intake Request
               </Button>
               <Button
                 variant="contained"
@@ -378,6 +392,10 @@ export default function App({ colorMode = "light", onToggleColorMode }) {
             <Route
               path="/projects"
               element={authed ? <ProjectsListPage /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/projects/intake"
+              element={authed ? <ProjectIntakePage /> : <Navigate to="/login" replace />}
             />
             <Route
               path="/projects/executive"

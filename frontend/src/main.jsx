@@ -118,6 +118,18 @@ function AppRoot() {
               },
             },
           },
+          MuiTableBody: {
+            styleOverrides: {
+              root: {
+                "& .MuiTableRow-root:nth-of-type(odd) .MuiTableCell-root": {
+                  backgroundColor: mode === "dark" ? "#0B1220" : "#F8FAFC",
+                },
+                "& .MuiTableRow-root:hover .MuiTableCell-root": {
+                  backgroundColor: mode === "dark" ? "#111827" : "#EFF6FF",
+                },
+              },
+            },
+          },
         },
       }),
     [mode]

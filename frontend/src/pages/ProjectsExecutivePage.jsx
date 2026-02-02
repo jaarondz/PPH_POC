@@ -7,6 +7,12 @@ import {
   Stack,
   Typography,
   Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from "@mui/material";
 import { apiGet } from "../api/client.js";
 
@@ -99,9 +105,16 @@ function BarList({ title, items }) {
   );
 }
 
+function formatUserLabel(user) {
+  if (!user) return "Unassigned";
+  const full = [user.first_name, user.last_name].filter(Boolean).join(" ");
+  return full || user.username || user.email || "User";
+}
+
 export default function ProjectsExecutivePage() {
   const [projects, setProjects] = React.useState([]);
   const [assets, setAssets] = React.useState([]);
+  const [tasks, setTasks] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
 
@@ -112,15 +125,18 @@ export default function ProjectsExecutivePage() {
       setLoading(true);
       setError("");
       try {
-        const [projectsData, assetsData] = await Promise.all([
+        const [projectsData, assetsData, tasksData] = await Promise.all([
           apiGet("/api/projects/"),
           apiGet("/api/assets/"),
+          apiGet("/api/project-tasks/"),
         ]);
         const rows = safeRows(projectsData);
         const assetRows = safeRows(assetsData);
+        const taskRows = safeRows(tasksData);
         if (!mounted) return;
         setProjects(rows);
         setAssets(assetRows);
+        setTasks(taskRows);
       } catch (e) {
         if (mounted) setError(e.message || "Failed to load projects");
       } finally {
@@ -150,6 +166,51 @@ export default function ProjectsExecutivePage() {
   const anyRisk = assets.filter(
     (a) => a.risk_security || a.risk_privacy || a.risk_compliance
   ).length;
+
+  const taskMatrix = React.useMemo(() => {
+    const peopleMap = new Map();
+    tasks.forEach((task) => {
+      const user = task.assigned_to_detail;
+      const key = user?.id || "unassigned";
+      if (!peopleMap.has(key)) {
+        peopleMap.set(key, {
+          id: key,
+          label: formatUserLabel(user),
+        });
+      }
+    });
+
+    const people = Array.from(peopleMap.values()).sort((a, b) =>
+      a.label.localeCompare(b.label)
+    );
+
+    const counts = new Map();
+    tasks.forEach((task) => {
+      const projectId = task.project;
+      if (!projectId) return;
+      const personId = task.assigned_to_detail?.id || "unassigned";
+      const key = `${projectId}:${personId}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+
+    const projectRows = projects
+      .map((project) => {
+        const rowCounts = {};
+        people.forEach((person) => {
+          const key = `${project.id}:${person.id}`;
+          rowCounts[person.id] = counts.get(key) || 0;
+        });
+
+        return {
+          id: project.id,
+          name: project.name,
+          counts: rowCounts,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return { people, projectRows };
+  }, [projects, tasks]);
 
   return (
     <Stack spacing={2}>
@@ -231,6 +292,42 @@ export default function ProjectsExecutivePage() {
           <Box>
             <BarList title="Projects by Scope" items={scopeCounts} />
           </Box>
+
+          <Paper sx={{ p: 2 }}>
+            <Stack spacing={1}>
+              <Typography variant="h6">Tasks by Person and Project</Typography>
+              {taskMatrix.people.length === 0 ? (
+                <Typography color="text.secondary">No project tasks available.</Typography>
+              ) : (
+                <TableContainer sx={{ maxHeight: 420 }}>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700 }}>Project</TableCell>
+                        {taskMatrix.people.map((person) => (
+                          <TableCell key={person.id} align="center">
+                            {person.label}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {taskMatrix.projectRows.map((row) => (
+                        <TableRow key={row.id} hover>
+                          <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
+                          {taskMatrix.people.map((person) => (
+                            <TableCell key={person.id} align="center">
+                              {row.counts[person.id] || 0}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Stack>
+          </Paper>
 
           <Paper sx={{ p: 2 }}>
             <Stack spacing={1}>

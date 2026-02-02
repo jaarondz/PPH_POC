@@ -103,6 +103,7 @@ export default function ProjectsGanttPage() {
     loadProjects();
   }, [loadProjects]);
 
+
   const filtered = React.useMemo(() => {
     return projects.filter((p) => {
       const matchesSearch =
