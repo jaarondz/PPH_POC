@@ -5,6 +5,7 @@ import {
   Paper,
   TextField,
   Stack,
+  Box,
   Table,
   TableBody,
   TableCell,
@@ -21,13 +22,21 @@ import {
   TableSortLabel,
   Button,
   ButtonBase,
+  ButtonGroup,
   IconButton,
 } from "@mui/material";
 import { apiGet } from "../api/client.js";
 import CreateProjectDialog from "../components/CreateProjectDialog.jsx";
+import IntakeRequestDialog from "../components/IntakeRequestDialog.jsx";
 import EditIcon from "@mui/icons-material/Edit";
 import EditProjectDialog from "../components/EditProjectDialog.jsx";
 import { downloadCsv } from "../utils/csv.js";
+import { Gantt, ViewMode } from "gantt-task-react";
+import "gantt-task-react/dist/index.css";
+import {
+  GanttTaskListHeader,
+  GanttTaskListTable,
+} from "../components/GanttTaskListTable.jsx";
 
 const STATUS_LABELS = {
   INTAKE: "Intake",
@@ -60,6 +69,33 @@ function containsIgnoreCase(value, query) {
   if (!query) return true;
   if (!value) return false;
   return String(value).toLowerCase().includes(query.toLowerCase());
+}
+
+function toDate(value, fallback) {
+  if (!value) return fallback;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? fallback : date;
+}
+
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function progressFromStatus(status) {
+  switch (status) {
+    case "DONE":
+      return 100;
+    case "ACTIVE":
+      return 50;
+    case "BLOCKED":
+      return 25;
+    case "PLANNED":
+      return 10;
+    default:
+      return 0;
+  }
 }
 
 const SORT_COLUMNS = [
@@ -112,6 +148,7 @@ export default function ProjectsListPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [createOpen, setCreateOpen] = React.useState(false);
+  const [intakeOpen, setIntakeOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
   const [selectedProject, setSelectedProject] = React.useState(null);
 
@@ -120,7 +157,8 @@ export default function ProjectsListPage() {
   const [typeFilter, setTypeFilter] = React.useState("ALL");
   const [sortField, setSortField] = React.useState("name");
   const [sortDirection, setSortDirection] = React.useState("asc");
-  const [bucketMode, setBucketMode] = React.useState(false);
+  const [viewMode, setViewMode] = React.useState("DEFAULT");
+  const [ganttView, setGanttView] = React.useState(ViewMode.Week);
   const [assetLinks, setAssetLinks] = React.useState([]);
   const [loadingLinks, setLoadingLinks] = React.useState(false);
   const [linksError, setLinksError] = React.useState("");
@@ -144,7 +182,7 @@ export default function ProjectsListPage() {
   }, [loadProjects]);
 
   React.useEffect(() => {
-    if (!bucketMode) return;
+    if (viewMode !== "BUCKET") return;
     let mounted = true;
     setLoadingLinks(true);
     setLinksError("");
@@ -164,7 +202,7 @@ export default function ProjectsListPage() {
     return () => {
       mounted = false;
     };
-  }, [bucketMode]);
+  }, [viewMode]);
 
   const filtered = React.useMemo(() => {
     return projects.filter((p) => {
@@ -184,6 +222,7 @@ export default function ProjectsListPage() {
     const now = new Date();
     const thirtyDaysAgo = new Date(now);
     thirtyDaysAgo.setDate(now.getDate() - 30);
+    const todayStr = now.toISOString().slice(0, 10);
 
     const active = projects.filter((p) => p.status === "ACTIVE").length;
     const blocked = projects.filter((p) => p.status === "BLOCKED").length;
@@ -193,8 +232,12 @@ export default function ProjectsListPage() {
       const updated = new Date(p.updated_at);
       return updated >= thirtyDaysAgo;
     }).length;
+    const overdue = projects.filter((p) => {
+      if (!p.target_end_date) return false;
+      return p.target_end_date < todayStr;
+    }).length;
 
-    return { active, blocked, recentCompleted };
+    return { active, blocked, recentCompleted, overdue };
   }, [projects]);
 
   function applyStatusFilter(value) {
@@ -214,6 +257,35 @@ export default function ProjectsListPage() {
     return rows;
   }, [filtered, sortField, sortDirection]);
 
+  const ganttTasks = React.useMemo(() => {
+    const today = new Date();
+    return filtered.map((p) => {
+      const start = toDate(p.start_date, today);
+      const end = toDate(p.target_end_date, addDays(start, 7));
+      const safeEnd = end < start ? addDays(start, 1) : end;
+
+      return {
+        id: p.id,
+        name: p.name,
+        start,
+        end: safeEnd,
+        type: "task",
+        progress: progressFromStatus(p.status),
+        isDisabled: true,
+      };
+    });
+  }, [filtered]);
+
+  const TaskListTable = React.useCallback(
+    (props) => (
+      <GanttTaskListTable
+        {...props}
+        onRowClick={(task) => navigate(`/projects/${task.id}`)}
+      />
+    ),
+    [navigate]
+  );
+
   function handleSort(field) {
     if (sortField === field) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -224,7 +296,7 @@ export default function ProjectsListPage() {
   }
 
   const bucketed = React.useMemo(() => {
-    if (!bucketMode) return [];
+    if (viewMode !== "BUCKET") return [];
 
     const projectById = new Map(projects.map((p) => [p.id, p]));
     const projectIdsInFilter = new Set(filtered.map((p) => p.id));
@@ -284,13 +356,13 @@ export default function ProjectsListPage() {
     if (unlinkedProjects.length > 0) {
       buckets.push({
         id: "unlinked",
-        label: "Unlinked Projects",
+        label: "Standalone Projects",
         projects: sortBucketProjects(unlinkedProjects),
       });
     }
 
     return buckets;
-  }, [bucketMode, assetLinks, filtered, projects]);
+  }, [viewMode, assetLinks, filtered, projects]);
 
   const handleExport = React.useCallback(() => {
     const columns = [
@@ -354,30 +426,55 @@ export default function ProjectsListPage() {
             </Stack>
           </Paper>
         </ButtonBase>
+
+        <ButtonBase
+          onClick={() => applyStatusFilter("ALL")}
+          sx={{ flex: 1, textAlign: "left", borderRadius: 2 }}
+        >
+          <Paper sx={{ p: 2, width: "100%" }}>
+            <Stack spacing={0.5}>
+              <Typography variant="overline" color="text.secondary">
+                Overdue Projects
+              </Typography>
+              <Typography variant="h4">{summaryCounts.overdue}</Typography>
+              <Chip size="small" label="Past target end date" />
+            </Stack>
+          </Paper>
+        </ButtonBase>
       </Stack>
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
         <Typography variant="h4" sx={{ flexGrow: 1 }}>
           Projects
         </Typography>
-        <Stack direction="row" spacing={1}>
-          <Button variant="outlined" onClick={() => navigate("/projects/gantt")}>
-            View Gantt
-          </Button>
-          <Button variant="outlined" onClick={() => navigate("/projects/intake")}>
-            Intake Request
-          </Button>
-          <Button
-            variant={bucketMode ? "contained" : "outlined"}
-            onClick={() => setBucketMode((prev) => !prev)}
-          >
-            {bucketMode ? "Bucket View On" : "Bucket by Asset"}
-          </Button>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ width: "100%" }}>
+          <ButtonGroup variant="outlined">
+            <Button
+              variant={viewMode === "DEFAULT" ? "contained" : "outlined"}
+              onClick={() => setViewMode("DEFAULT")}
+            >
+              Default View
+            </Button>
+            <Button
+              variant={viewMode === "BUCKET" ? "contained" : "outlined"}
+              onClick={() => setViewMode("BUCKET")}
+            >
+              Bucket by Asset
+            </Button>
+            <Button
+              variant={viewMode === "GANTT" ? "contained" : "outlined"}
+              onClick={() => setViewMode("GANTT")}
+            >
+              Gantt View
+            </Button>
+          </ButtonGroup>
+          <ButtonGroup variant="outlined">
+            <Button onClick={() => setIntakeOpen(true)}>Intake Request</Button>
+            <Button onClick={() => setCreateOpen(true)}>Add Project</Button>
+          </ButtonGroup>
+          <Box sx={{ flexGrow: 1 }} />
           <Button variant="outlined" onClick={handleExport} disabled={filtered.length === 0}>
             Export CSV
-          </Button>
-          <Button variant="contained" onClick={() => setCreateOpen(true)}>
-            Add Project
           </Button>
         </Stack>
       </Stack>
@@ -422,6 +519,21 @@ export default function ProjectsListPage() {
               ))}
             </Select>
           </FormControl>
+
+          {viewMode === "GANTT" && (
+            <FormControl sx={{ minWidth: 180 }}>
+              <InputLabel>View</InputLabel>
+              <Select
+                value={ganttView}
+                label="View"
+                onChange={(e) => setGanttView(e.target.value)}
+              >
+                <MenuItem value={ViewMode.Day}>Day</MenuItem>
+                <MenuItem value={ViewMode.Week}>Week</MenuItem>
+                <MenuItem value={ViewMode.Month}>Month</MenuItem>
+              </Select>
+            </FormControl>
+          )}
         </Stack>
       </Paper>
 
@@ -432,7 +544,7 @@ export default function ProjectsListPage() {
         </Stack>
       )}
 
-      {bucketMode && loadingLinks && (
+      {viewMode === "BUCKET" && loadingLinks && (
         <Stack direction="row" spacing={2} alignItems="center">
           <CircularProgress size={22} />
           <Typography>Loading asset buckets…</Typography>
@@ -443,7 +555,7 @@ export default function ProjectsListPage() {
 
       {error && <Alert severity="error">{error}</Alert>}
 
-      {!loading && !error && !bucketMode && (
+      {!loading && !error && viewMode === "DEFAULT" && (
         <TableContainer component={Paper}>
           <Table size="small">
             <TableHead>
@@ -511,7 +623,7 @@ export default function ProjectsListPage() {
         </TableContainer>
       )}
 
-      {!loading && !error && bucketMode && (
+      {!loading && !error && viewMode === "BUCKET" && (
         <TableContainer component={Paper}>
           <Table size="small">
             <TableHead>
@@ -589,6 +701,24 @@ export default function ProjectsListPage() {
         </TableContainer>
       )}
 
+      {!loading && !error && viewMode === "GANTT" && (
+        <Paper sx={{ p: 2 }}>
+          {ganttTasks.length === 0 ? (
+            <Typography color="text.secondary">No projects to show.</Typography>
+          ) : (
+            <Gantt
+              tasks={ganttTasks}
+              viewMode={ganttView}
+              listCellWidth="420px"
+              rowHeight={56}
+              headerHeight={40}
+              TaskListHeader={GanttTaskListHeader}
+              TaskListTable={TaskListTable}
+            />
+          )}
+        </Paper>
+      )}
+
       {!loading && !error && (
         <Typography variant="body2" color="text.secondary">
           Showing {filtered.length} of {projects.length} projects
@@ -598,6 +728,14 @@ export default function ProjectsListPage() {
       <CreateProjectDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
+        onCreated={(created) => {
+          if (created) loadProjects();
+        }}
+      />
+
+      <IntakeRequestDialog
+        open={intakeOpen}
+        onClose={() => setIntakeOpen(false)}
         onCreated={(created) => {
           if (created) loadProjects();
         }}

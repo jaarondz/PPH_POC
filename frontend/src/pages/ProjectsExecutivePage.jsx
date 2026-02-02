@@ -155,6 +155,8 @@ export default function ProjectsExecutivePage() {
   const active = projects.filter((p) => p.status === "ACTIVE").length;
   const planned = projects.filter((p) => p.status === "PLANNED").length;
   const done = projects.filter((p) => p.status === "DONE").length;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const overdue = projects.filter((p) => p.target_end_date && p.target_end_date < todayStr).length;
 
   const statusCounts = buildCounts(projects, "status", STATUS_LABELS);
   const typeCounts = buildCounts(projects, "project_type", TYPE_LABELS);
@@ -273,6 +275,16 @@ export default function ProjectsExecutivePage() {
                   <Chip size="small" label={`Blocked ${blocked}`} />
                   <Chip size="small" label={`Done ${done}`} />
                 </Stack>
+              </Stack>
+            </Paper>
+
+            <Paper sx={{ p: 2, flex: 1 }}>
+              <Stack spacing={0.5}>
+                <Typography variant="overline" color="text.secondary">
+                  Overdue Projects
+                </Typography>
+                <Typography variant="h4">{overdue}</Typography>
+                <Typography color="text.secondary">Past target end date</Typography>
               </Stack>
             </Paper>
           </Stack>

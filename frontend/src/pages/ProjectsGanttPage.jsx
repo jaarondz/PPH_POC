@@ -137,6 +137,16 @@ export default function ProjectsGanttPage() {
     });
   }, [filtered]);
 
+  const TaskListTable = React.useCallback(
+    (props) => (
+      <GanttTaskListTable
+        {...props}
+        onRowClick={(task) => navigate(`/projects/${task.id}`)}
+      />
+    ),
+    [navigate]
+  );
+
   return (
     <Stack spacing={2}>
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
@@ -225,7 +235,7 @@ export default function ProjectsGanttPage() {
               rowHeight={56}
               headerHeight={40}
               TaskListHeader={GanttTaskListHeader}
-              TaskListTable={GanttTaskListTable}
+              TaskListTable={TaskListTable}
             />
           )}
         </Paper>

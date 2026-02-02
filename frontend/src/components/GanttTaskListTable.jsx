@@ -49,6 +49,7 @@ export function GanttTaskListTable({
   tasks,
   selectedTaskId,
   setSelectedTask,
+  onRowClick,
 }) {
   return (
     <div style={{ width: rowWidth, fontFamily, fontSize }}>
@@ -57,7 +58,10 @@ export function GanttTaskListTable({
         return (
           <div
             key={task.id}
-            onClick={() => setSelectedTask(task.id)}
+            onClick={() => {
+              setSelectedTask?.(task.id);
+              onRowClick?.(task);
+            }}
             style={{
               display: "flex",
               alignItems: "center",
