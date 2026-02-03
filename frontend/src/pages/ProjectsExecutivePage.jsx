@@ -2,17 +2,21 @@ import * as React from "react";
 import {
   Alert,
   Box,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
   Chip,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Typography,
 } from "@mui/material";
 import { apiGet } from "../api/client.js";
 
@@ -48,6 +52,13 @@ const SCOPE_LABELS = {
   JUVENILE: "Juvenile",
   CROSS_CUTTING: "Cross-Cutting",
   OTHER: "Other",
+};
+
+const OWNING_TEAM_LABELS = {
+  BADM: "BADM",
+  PMO: "PMO",
+  IO: "IO",
+  ITSO: "ITSO",
 };
 
 function safeRows(data) {
@@ -117,6 +128,12 @@ export default function ProjectsExecutivePage() {
   const [tasks, setTasks] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
+  const [owningTeam, setOwningTeam] = React.useState("");
+  const [teamOptions, setTeamOptions] = React.useState([]);
+  const sortedTeamOptions = React.useMemo(
+    () => [...teamOptions].sort((a, b) => a.localeCompare(b)),
+    [teamOptions]
+  );
 
   React.useEffect(() => {
     let mounted = true;
@@ -125,8 +142,9 @@ export default function ProjectsExecutivePage() {
       setLoading(true);
       setError("");
       try {
+        const query = owningTeam ? `?owning_team=${encodeURIComponent(owningTeam)}` : "";
         const [projectsData, assetsData, tasksData] = await Promise.all([
-          apiGet("/api/projects/"),
+          apiGet(`/api/projects/${query}`),
           apiGet("/api/assets/"),
           apiGet("/api/project-tasks/"),
         ]);
@@ -137,6 +155,16 @@ export default function ProjectsExecutivePage() {
         setProjects(rows);
         setAssets(assetRows);
         setTasks(taskRows);
+        const currentTeams = rows
+          .map((row) => row.owning_team)
+          .filter((value) => Boolean(value));
+        if (currentTeams.length) {
+          setTeamOptions((prev) => {
+            const merged = new Set(prev);
+            currentTeams.forEach((team) => merged.add(team));
+            return Array.from(merged);
+          });
+        }
       } catch (e) {
         if (mounted) setError(e.message || "Failed to load projects");
       } finally {
@@ -148,7 +176,7 @@ export default function ProjectsExecutivePage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [owningTeam]);
 
   const total = projects.length;
   const blocked = projects.filter((p) => p.status === "BLOCKED").length;
@@ -169,9 +197,17 @@ export default function ProjectsExecutivePage() {
     (a) => a.risk_security || a.risk_privacy || a.risk_compliance
   ).length;
 
+  const owningTeamLabel = React.useCallback(
+    (team) => OWNING_TEAM_LABELS[team] || team,
+    []
+  );
+
   const taskMatrix = React.useMemo(() => {
+    const projectIds = new Set(projects.map((project) => project.id));
+    const filteredTasks = tasks.filter((task) => projectIds.has(task.project));
+
     const peopleMap = new Map();
-    tasks.forEach((task) => {
+    filteredTasks.forEach((task) => {
       const user = task.assigned_to_detail;
       const key = user?.id || "unassigned";
       if (!peopleMap.has(key)) {
@@ -187,7 +223,7 @@ export default function ProjectsExecutivePage() {
     );
 
     const counts = new Map();
-    tasks.forEach((task) => {
+    filteredTasks.forEach((task) => {
       const projectId = task.project;
       if (!projectId) return;
       const personId = task.assigned_to_detail?.id || "unassigned";
@@ -234,6 +270,30 @@ export default function ProjectsExecutivePage() {
 
       {!loading && !error && (
         <Stack spacing={2}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            justifyContent="flex-end"
+          >
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel id="projects-owning-team-filter-label">Owning Team</InputLabel>
+              <Select
+                labelId="projects-owning-team-filter-label"
+                label="Owning Team"
+                value={owningTeam}
+                onChange={(event) => setOwningTeam(event.target.value)}
+              >
+                <MenuItem value="">All Owning Teams</MenuItem>
+                {sortedTeamOptions.map((team) => (
+                  <MenuItem key={team} value={team}>
+                    {owningTeamLabel(team)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+
           <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
             <Paper sx={{ p: 2, flex: 1 }}>
               <Stack spacing={0.5}>

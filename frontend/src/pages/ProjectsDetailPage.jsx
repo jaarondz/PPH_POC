@@ -72,6 +72,13 @@ const SCOPE_LABELS = {
   OTHER: "Other",
 };
 
+const OWNING_TEAM_LABELS = {
+  BADM: "BADM",
+  PMO: "PMO",
+  IO: "IO",
+  ITSO: "ITSO",
+};
+
 const TASK_STATUS_LABELS = {
   NOT_STARTED: "Not Started",
   IN_PROGRESS: "In Progress",
@@ -363,6 +370,13 @@ export default function ProjectDetailPage() {
                 Scope
               </Typography>
               <Typography>{SCOPE_LABELS[project.scope] || project.scope || "—"}</Typography>
+            </Box>
+
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary">
+                Owning Team
+              </Typography>
+              <Typography>{OWNING_TEAM_LABELS[project.owning_team] || project.owning_team || "—"}</Typography>
             </Box>
 
             <Box>

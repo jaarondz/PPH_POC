@@ -29,11 +29,19 @@ class ProjectViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Project.objects.all().order_by("-updated_at")
         user = self.request.user
+        owning_team = self.request.query_params.get("owning_team", "").strip()
 
-        if can_modify_all(user) or user_in_role(user, ROLE_PORTFOLIO_VIEWER) or user_in_role(user, ROLE_PROJECT_MANAGER):
-            return qs
+        if not (
+            can_modify_all(user)
+            or user_in_role(user, ROLE_PORTFOLIO_VIEWER)
+            or user_in_role(user, ROLE_PROJECT_MANAGER)
+        ):
+            qs = qs.filter(assigned_to=user)
 
-        return qs.filter(assigned_to=user)
+        if owning_team:
+            qs = qs.filter(owning_team=owning_team)
+
+        return qs
 
 class ProjectAssetLinkViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     queryset = ProjectAssetLink.objects.select_related("project", "asset").all()

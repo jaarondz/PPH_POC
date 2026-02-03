@@ -36,6 +36,12 @@ class Project(UUIDModel, TimeStampedModel):
         CROSS_CUTTING = "CROSS_CUTTING", "Cross-Cutting"
         OTHER = "OTHER", "Other"
 
+    class OwningTeam(models.TextChoices):
+        BADM = "BADM", "BADM"
+        PMO = "PMO", "PMO"
+        IO = "IO", "IO"
+        ITSO = "ITSO", "ITSO"
+
     name = models.CharField(max_length=200)
     summary = models.TextField(blank=True)
 
@@ -43,6 +49,7 @@ class Project(UUIDModel, TimeStampedModel):
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.INTAKE)
     priority = models.CharField(max_length=4, choices=Priority.choices, default=Priority.P2)
     scope = models.CharField(max_length=20, choices=Scope.choices, blank=True)
+    owning_team = models.CharField(max_length=8, choices=OwningTeam.choices, blank=True)
 
     sponsor = models.CharField(max_length=200, blank=True)  # requestor/sponsor in POC
     owner = models.ForeignKey(

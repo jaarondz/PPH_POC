@@ -35,6 +35,13 @@ const STATUS_LABELS = {
   RETIRED: "Retired",
 };
 
+const SCOPE_LABELS = {
+  ADMINISTRATIVE: "Administrative",
+  ADULT: "Adult",
+  JUVENILE: "Juvenile",
+  CROSS_CUTTING: "Cross-Cutting",
+};
+
 const AUTOMATION_LABELS = {
   AUTOMATED: "Automated",
   MANUAL: "Manual",
@@ -198,6 +205,12 @@ export default function ReportDetailPage() {
                 Status
               </Typography>
               <Typography>{STATUS_LABELS[report.status] || report.status}</Typography>
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary">
+                Scope
+              </Typography>
+              <Typography>{SCOPE_LABELS[report.scope] || report.scope || "—"}</Typography>
             </Box>
             <Box>
               <Typography variant="subtitle2" color="text.secondary">

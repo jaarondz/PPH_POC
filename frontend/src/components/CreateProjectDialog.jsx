@@ -49,6 +49,13 @@ const SCOPE_LABELS = {
   OTHER: "Other",
 };
 
+const OWNING_TEAM_LABELS = {
+  BADM: "BADM",
+  PMO: "PMO",
+  IO: "IO",
+  ITSO: "ITSO",
+};
+
 const EMPTY_FORM = {
   name: "",
   summary: "",
@@ -56,6 +63,7 @@ const EMPTY_FORM = {
   status: "INTAKE",
   priority: "P2",
   scope: "",
+  owning_team: "",
   sponsor: "",
   start_date: "",
   target_end_date: "",
@@ -191,13 +199,32 @@ export default function CreateProjectDialog({ open, onClose, onCreated }) {
             disabled={saving}
           />
 
-          <TextField
-            label="Sponsor"
-            value={form.sponsor}
-            onChange={(e) => updateField("sponsor", e.target.value)}
-            fullWidth
-            disabled={saving}
-          />
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <FormControl fullWidth>
+              <InputLabel>Owning Team</InputLabel>
+              <Select
+                value={form.owning_team}
+                label="Owning Team"
+                onChange={(e) => updateField("owning_team", e.target.value)}
+                disabled={saving}
+              >
+                <MenuItem value="">None</MenuItem>
+                {Object.keys(OWNING_TEAM_LABELS).map((key) => (
+                  <MenuItem key={key} value={key}>
+                    {OWNING_TEAM_LABELS[key]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Sponsor"
+              value={form.sponsor}
+              onChange={(e) => updateField("sponsor", e.target.value)}
+              fullWidth
+              disabled={saving}
+            />
+          </Stack>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField

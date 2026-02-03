@@ -48,9 +48,17 @@ const REFRESH_FREQUENCY_LABELS = {
   MULTIPLE_DAILY: "Multiple Times Daily",
 };
 
+const SCOPE_LABELS = {
+  ADMINISTRATIVE: "Administrative",
+  ADULT: "Adult",
+  JUVENILE: "Juvenile",
+  CROSS_CUTTING: "Cross-Cutting",
+};
+
 const EMPTY_FORM = {
   name: "",
   status: "ACTIVE",
+  scope: "",
   description: "",
   business_owner_user: "",
   technical_owner_user: "",
@@ -158,6 +166,23 @@ export default function CreateReportDialog({ open, onClose, onCreated }) {
               {Object.keys(STATUS_LABELS).map((key) => (
                 <MenuItem key={key} value={key}>
                   {STATUS_LABELS[key]}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel>Scope</InputLabel>
+            <Select
+              value={form.scope}
+              label="Scope"
+              onChange={(e) => updateField("scope", e.target.value)}
+              disabled={saving}
+            >
+              <MenuItem value="">None</MenuItem>
+              {Object.keys(SCOPE_LABELS).map((key) => (
+                <MenuItem key={key} value={key}>
+                  {SCOPE_LABELS[key]}
                 </MenuItem>
               ))}
             </Select>

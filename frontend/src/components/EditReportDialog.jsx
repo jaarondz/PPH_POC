@@ -48,6 +48,13 @@ const REFRESH_FREQUENCY_LABELS = {
   MULTIPLE_DAILY: "Multiple Times Daily",
 };
 
+const SCOPE_LABELS = {
+  ADMINISTRATIVE: "Administrative",
+  ADULT: "Adult",
+  JUVENILE: "Juvenile",
+  CROSS_CUTTING: "Cross-Cutting",
+};
+
 function formatUser(user) {
   if (!user) return "";
   const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
@@ -66,6 +73,7 @@ export default function EditReportDialog({ open, onClose, report, onUpdated }) {
       setForm({
         name: report.name || "",
         status: report.status || "ACTIVE",
+        scope: report.scope || "",
         description: report.description || "",
         business_owner_user: report.business_owner_user || "",
         technical_owner_user: report.technical_owner_user || "",
@@ -157,6 +165,23 @@ export default function EditReportDialog({ open, onClose, report, onUpdated }) {
               {Object.keys(STATUS_LABELS).map((key) => (
                 <MenuItem key={key} value={key}>
                   {STATUS_LABELS[key]}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel>Scope</InputLabel>
+            <Select
+              value={form?.scope || ""}
+              label="Scope"
+              onChange={(e) => updateField("scope", e.target.value)}
+              disabled={saving}
+            >
+              <MenuItem value="">None</MenuItem>
+              {Object.keys(SCOPE_LABELS).map((key) => (
+                <MenuItem key={key} value={key}>
+                  {SCOPE_LABELS[key]}
                 </MenuItem>
               ))}
             </Select>

@@ -34,6 +34,7 @@ import ReportsListPage from "./pages/ReportsListPage.jsx";
 import ReportDetailPage from "./pages/ReportDetailPage.jsx";
 import ReportsExecutivePage from "./pages/ReportsExecutivePage.jsx";
 import TeamsUsersPage from "./pages/TeamsUsersPage.jsx";
+import ExecutiveSummaryPage from "./pages/ExecutiveSummaryPage.jsx";
 
 function isAuthed() {
   return !!localStorage.getItem("token");
@@ -41,46 +42,26 @@ function isAuthed() {
 
 export default function App({ colorMode = "light", onToggleColorMode }) {
   const authed = isAuthed();
-  const [assetsMenuAnchor, setAssetsMenuAnchor] = React.useState(null);
-  const [reportsMenuAnchor, setReportsMenuAnchor] = React.useState(null);
-  const [accomplishmentsMenuAnchor, setAccomplishmentsMenuAnchor] = React.useState(null);
-  const [projectsMenuAnchor, setProjectsMenuAnchor] = React.useState(null);
+  const [pagesMenuAnchor, setPagesMenuAnchor] = React.useState(null);
+  const [summariesMenuAnchor, setSummariesMenuAnchor] = React.useState(null);
 
-  const assetsMenuOpen = Boolean(assetsMenuAnchor);
-  const reportsMenuOpen = Boolean(reportsMenuAnchor);
-  const accomplishmentsMenuOpen = Boolean(accomplishmentsMenuAnchor);
-  const projectsMenuOpen = Boolean(projectsMenuAnchor);
+  const pagesMenuOpen = Boolean(pagesMenuAnchor);
+  const summariesMenuOpen = Boolean(summariesMenuAnchor);
 
-  const openAssetsMenu = (event) => {
-    setAssetsMenuAnchor(event.currentTarget);
+  const openPagesMenu = (event) => {
+    setPagesMenuAnchor(event.currentTarget);
   };
 
-  const closeAssetsMenu = () => {
-    setAssetsMenuAnchor(null);
+  const closePagesMenu = () => {
+    setPagesMenuAnchor(null);
   };
 
-  const openReportsMenu = (event) => {
-    setReportsMenuAnchor(event.currentTarget);
+  const openSummariesMenu = (event) => {
+    setSummariesMenuAnchor(event.currentTarget);
   };
 
-  const closeReportsMenu = () => {
-    setReportsMenuAnchor(null);
-  };
-
-  const openAccomplishmentsMenu = (event) => {
-    setAccomplishmentsMenuAnchor(event.currentTarget);
-  };
-
-  const closeAccomplishmentsMenu = () => {
-    setAccomplishmentsMenuAnchor(null);
-  };
-
-  const openProjectsMenu = (event) => {
-    setProjectsMenuAnchor(event.currentTarget);
-  };
-
-  const closeProjectsMenu = () => {
-    setProjectsMenuAnchor(null);
+  const closeSummariesMenu = () => {
+    setSummariesMenuAnchor(null);
   };
 
   function logout() {
@@ -104,22 +85,102 @@ export default function App({ colorMode = "light", onToggleColorMode }) {
 
           <Button
             color="inherit"
-            onMouseEnter={openAssetsMenu}
-            aria-controls={assetsMenuOpen ? "assets-menu" : undefined}
+            onMouseEnter={openSummariesMenu}
+            aria-controls={summariesMenuOpen ? "summaries-menu" : undefined}
             aria-haspopup="true"
-            aria-expanded={assetsMenuOpen ? "true" : undefined}
+            aria-expanded={summariesMenuOpen ? "true" : undefined}
             endIcon={<ArrowDropDownIcon />}
           >
-            Assets
+            Summaries
           </Button>
 
           <Menu
-            id="assets-menu"
-            anchorEl={assetsMenuAnchor}
-            open={assetsMenuOpen}
-            onClose={closeAssetsMenu}
+            id="summaries-menu"
+            anchorEl={summariesMenuAnchor}
+            open={summariesMenuOpen}
+            onClose={closeSummariesMenu}
             MenuListProps={{
-              onMouseLeave: closeAssetsMenu,
+              onMouseLeave: closeSummariesMenu,
+              sx: { p: 0 },
+            }}
+            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+            transformOrigin={{ vertical: "top", horizontal: "left" }}
+            PaperProps={{ sx: { p: 1 } }}
+          >
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button
+                variant="contained"
+                component={Link}
+                to="/executive-summary"
+                onClick={closeSummariesMenu}
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  "&:hover": { bgcolor: "primary.dark" },
+                }}
+              >
+                Executive Summary
+              </Button>
+              <Button
+                variant="contained"
+                component={Link}
+                to="/assets/executive"
+                onClick={closeSummariesMenu}
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  "&:hover": { bgcolor: "primary.dark" },
+                }}
+              >
+                Asset Summary
+              </Button>
+              <Button
+                variant="contained"
+                component={Link}
+                to="/projects/executive"
+                onClick={closeSummariesMenu}
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  "&:hover": { bgcolor: "primary.dark" },
+                }}
+              >
+                Project Summary
+              </Button>
+              <Button
+                variant="contained"
+                component={Link}
+                to="/accomplishments/executive"
+                onClick={closeSummariesMenu}
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  "&:hover": { bgcolor: "primary.dark" },
+                }}
+              >
+                Accomplishment Summary
+              </Button>
+            </Box>
+          </Menu>
+
+          <Button
+            color="inherit"
+            onMouseEnter={openPagesMenu}
+            aria-controls={pagesMenuOpen ? "pages-menu" : undefined}
+            aria-haspopup="true"
+            aria-expanded={pagesMenuOpen ? "true" : undefined}
+            endIcon={<ArrowDropDownIcon />}
+          >
+            Pages
+          </Button>
+
+          <Menu
+            id="pages-menu"
+            anchorEl={pagesMenuAnchor}
+            open={pagesMenuOpen}
+            onClose={closePagesMenu}
+            MenuListProps={{
+              onMouseLeave: closePagesMenu,
               sx: { p: 0 },
             }}
             anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
@@ -131,215 +192,53 @@ export default function App({ colorMode = "light", onToggleColorMode }) {
                 variant="contained"
                 component={Link}
                 to="/assets"
-                onClick={closeAssetsMenu}
+                onClick={closePagesMenu}
                 sx={{
                   bgcolor: "primary.main",
                   color: "primary.contrastText",
                   "&:hover": { bgcolor: "primary.dark" },
                 }}
               >
-                Asset List
+                Assets
               </Button>
-              <Button
-                variant="contained"
-                component={Link}
-                to="/assets/executive"
-                onClick={closeAssetsMenu}
-                sx={{
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                  "&:hover": { bgcolor: "primary.dark" },
-                }}
-              >
-                Executive View
-              </Button>
-            </Box>
-          </Menu>
-
-          <Button
-            color="inherit"
-            onMouseEnter={openProjectsMenu}
-            aria-controls={projectsMenuOpen ? "projects-menu" : undefined}
-            aria-haspopup="true"
-            aria-expanded={projectsMenuOpen ? "true" : undefined}
-            endIcon={<ArrowDropDownIcon />}
-          >
-            Projects
-          </Button>
-
-          <Menu
-            id="projects-menu"
-            anchorEl={projectsMenuAnchor}
-            open={projectsMenuOpen}
-            onClose={closeProjectsMenu}
-            MenuListProps={{
-              onMouseLeave: closeProjectsMenu,
-              sx: { p: 0 },
-            }}
-            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-            transformOrigin={{ vertical: "top", horizontal: "left" }}
-            PaperProps={{ sx: { p: 1 } }}
-          >
-            <Box sx={{ display: "flex", gap: 1 }}>
               <Button
                 variant="contained"
                 component={Link}
                 to="/projects"
-                onClick={closeProjectsMenu}
+                onClick={closePagesMenu}
                 sx={{
                   bgcolor: "primary.main",
                   color: "primary.contrastText",
                   "&:hover": { bgcolor: "primary.dark" },
                 }}
               >
-                Project List
+                Projects
               </Button>
-              <Button
-                variant="contained"
-                component={Link}
-                to="/projects/intake"
-                onClick={closeProjectsMenu}
-                sx={{
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                  "&:hover": { bgcolor: "primary.dark" },
-                }}
-              >
-                Intake Request
-              </Button>
-              <Button
-                variant="contained"
-                component={Link}
-                to="/projects/executive"
-                onClick={closeProjectsMenu}
-                sx={{
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                  "&:hover": { bgcolor: "primary.dark" },
-                }}
-              >
-                Executive View
-              </Button>
-              <Button
-                variant="contained"
-                component={Link}
-                to="/projects/gantt"
-                onClick={closeProjectsMenu}
-                sx={{
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                  "&:hover": { bgcolor: "primary.dark" },
-                }}
-              >
-                Project Gantt
-              </Button>
-            </Box>
-          </Menu>
-
-          <Button
-            color="inherit"
-            onMouseEnter={openReportsMenu}
-            aria-controls={reportsMenuOpen ? "reports-menu" : undefined}
-            aria-haspopup="true"
-            aria-expanded={reportsMenuOpen ? "true" : undefined}
-            endIcon={<ArrowDropDownIcon />}
-          >
-            Reports
-          </Button>
-
-          <Menu
-            id="reports-menu"
-            anchorEl={reportsMenuAnchor}
-            open={reportsMenuOpen}
-            onClose={closeReportsMenu}
-            MenuListProps={{
-              onMouseLeave: closeReportsMenu,
-              sx: { p: 0 },
-            }}
-            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-            transformOrigin={{ vertical: "top", horizontal: "left" }}
-            PaperProps={{ sx: { p: 1 } }}
-          >
-            <Box sx={{ display: "flex", gap: 1 }}>
               <Button
                 variant="contained"
                 component={Link}
                 to="/reports"
-                onClick={closeReportsMenu}
+                onClick={closePagesMenu}
                 sx={{
                   bgcolor: "primary.main",
                   color: "primary.contrastText",
                   "&:hover": { bgcolor: "primary.dark" },
                 }}
               >
-                Report List
+                Reports
               </Button>
-              <Button
-                variant="contained"
-                component={Link}
-                to="/reports/executive"
-                onClick={closeReportsMenu}
-                sx={{
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                  "&:hover": { bgcolor: "primary.dark" },
-                }}
-              >
-                Executive View
-              </Button>
-            </Box>
-          </Menu>
-
-          <Button
-            color="inherit"
-            onMouseEnter={openAccomplishmentsMenu}
-            aria-controls={accomplishmentsMenuOpen ? "accomplishments-menu" : undefined}
-            aria-haspopup="true"
-            aria-expanded={accomplishmentsMenuOpen ? "true" : undefined}
-            endIcon={<ArrowDropDownIcon />}
-          >
-            Accomplishments
-          </Button>
-
-          <Menu
-            id="accomplishments-menu"
-            anchorEl={accomplishmentsMenuAnchor}
-            open={accomplishmentsMenuOpen}
-            onClose={closeAccomplishmentsMenu}
-            MenuListProps={{
-              onMouseLeave: closeAccomplishmentsMenu,
-              sx: { p: 0 },
-            }}
-            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-            transformOrigin={{ vertical: "top", horizontal: "left" }}
-            PaperProps={{ sx: { p: 1 } }}
-          >
-            <Box sx={{ display: "flex", gap: 1 }}>
               <Button
                 variant="contained"
                 component={Link}
                 to="/accomplishments"
-                onClick={closeAccomplishmentsMenu}
+                onClick={closePagesMenu}
                 sx={{
                   bgcolor: "primary.main",
                   color: "primary.contrastText",
                   "&:hover": { bgcolor: "primary.dark" },
                 }}
               >
-                Accomplishments List
-              </Button>
-              <Button
-                variant="contained"
-                component={Link}
-                to="/accomplishments/executive"
-                onClick={closeAccomplishmentsMenu}
-                sx={{
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                  "&:hover": { bgcolor: "primary.dark" },
-                }}
-              >
-                Executive View
+                Accomplishments
               </Button>
             </Box>
           </Menu>
@@ -377,6 +276,13 @@ export default function App({ colorMode = "light", onToggleColorMode }) {
             <Route
               path="/"
               element={authed ? <HomePage /> : <Navigate to="/login" replace />}
+            />
+
+            <Route
+              path="/executive-summary"
+              element={
+                authed ? <ExecutiveSummaryPage /> : <Navigate to="/login" replace />
+              }
             />
 
             <Route

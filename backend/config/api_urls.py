@@ -18,6 +18,7 @@ from outcomes.views import (
 )
 from reports.views import ReportViewSet, ReportAssetLinkViewSet, ReportAccomplishmentLinkViewSet
 from documents.views import DocumentViewSet
+from core.views import executive_summary
 
 router = DefaultRouter()
 router.register(r"assets", AssetViewSet)
@@ -44,4 +45,5 @@ urlpatterns = [
     path("", include(router.urls)),
     path("auth/login/", LoginView.as_view()),
     path("auth/me/", MeView.as_view()),
+    path("executive-summary/", executive_summary, name="executive-summary"),
 ]

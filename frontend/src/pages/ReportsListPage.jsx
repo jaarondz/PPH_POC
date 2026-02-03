@@ -34,6 +34,13 @@ const STATUS_LABELS = {
   RETIRED: "Retired",
 };
 
+const SCOPE_LABELS = {
+  ADMINISTRATIVE: "Administrative",
+  ADULT: "Adult",
+  JUVENILE: "Juvenile",
+  CROSS_CUTTING: "Cross-Cutting",
+};
+
 function containsIgnoreCase(value, query) {
   if (!query) return true;
   if (!value) return false;
@@ -103,6 +110,7 @@ export default function ReportsListPage() {
     const columns = [
       { label: "Name", value: (r) => r.name },
       { label: "Status", value: (r) => STATUS_LABELS[r.status] || r.status || "" },
+      { label: "Scope", value: (r) => SCOPE_LABELS[r.scope] || r.scope || "" },
       {
         label: "Business Owner",
         value: (r) => ownerLabel(r.business_owner_user_detail, r.business_owner),
@@ -183,6 +191,7 @@ export default function ReportsListPage() {
               <TableRow>
                 <TableCell>Name</TableCell>
                 <TableCell>Status</TableCell>
+                <TableCell>Scope</TableCell>
                 <TableCell>Business Owner</TableCell>
                 <TableCell>Technical Owner</TableCell>
                 <TableCell align="right">Actions</TableCell>
@@ -198,6 +207,7 @@ export default function ReportsListPage() {
                 >
                   <TableCell sx={{ fontWeight: 600 }}>{r.name}</TableCell>
                   <TableCell>{STATUS_LABELS[r.status] || r.status}</TableCell>
+                  <TableCell>{SCOPE_LABELS[r.scope] || r.scope || "—"}</TableCell>
                   <TableCell>
                     {ownerLabel(r.business_owner_user_detail, r.business_owner)}
                   </TableCell>

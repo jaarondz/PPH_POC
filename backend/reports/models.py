@@ -18,6 +18,12 @@ class Report(UUIDModel, TimeStampedModel):
         AUTOMATED = "AUTOMATED", "Automated"
         MANUAL = "MANUAL", "Manual"
 
+    class Scope(models.TextChoices):
+        ADMINISTRATIVE = "ADMINISTRATIVE", "Administrative"
+        ADULT = "ADULT", "Adult"
+        JUVENILE = "JUVENILE", "Juvenile"
+        CROSS_CUTTING = "CROSS_CUTTING", "Cross-Cutting"
+
     class ReportType(models.TextChoices):
         POWER_BI = "POWER_BI", "Power BI"
         EXCEL = "EXCEL", "Excel"
@@ -38,6 +44,7 @@ class Report(UUIDModel, TimeStampedModel):
     description = models.TextField(blank=True)
 
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
+    scope = models.CharField(max_length=20, choices=Scope.choices, blank=True)
 
     developer = models.CharField(max_length=200, blank=True)
     developer_user = models.ForeignKey(

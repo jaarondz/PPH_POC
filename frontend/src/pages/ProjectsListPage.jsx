@@ -65,6 +65,13 @@ const SCOPE_LABELS = {
   OTHER: "Other",
 };
 
+const OWNING_TEAM_LABELS = {
+  BADM: "BADM",
+  PMO: "PMO",
+  IO: "IO",
+  ITSO: "ITSO",
+};
+
 function containsIgnoreCase(value, query) {
   if (!query) return true;
   if (!value) return false;
@@ -104,6 +111,7 @@ const SORT_COLUMNS = [
   { id: "status", label: "Status" },
   { id: "priority", label: "Priority" },
   { id: "scope", label: "Scope" },
+  { id: "owning_team", label: "Owning Team" },
   { id: "sponsor", label: "Sponsor" },
   { id: "dates", label: "Dates" },
 ];
@@ -118,6 +126,8 @@ function getSortValue(project, field) {
       return project.priority || "";
     case "scope":
       return SCOPE_LABELS[project.scope] || project.scope || "";
+    case "owning_team":
+      return OWNING_TEAM_LABELS[project.owning_team] || project.owning_team || "";
     case "sponsor":
       return project.sponsor || "";
     case "dates":
@@ -153,7 +163,7 @@ export default function ProjectsListPage() {
   const [selectedProject, setSelectedProject] = React.useState(null);
 
   const [search, setSearch] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState("ALL");
+  const [statusFilter, setStatusFilter] = React.useState([]);
   const [typeFilter, setTypeFilter] = React.useState("ALL");
   const [sortField, setSortField] = React.useState("name");
   const [sortDirection, setSortDirection] = React.useState("asc");
@@ -211,7 +221,7 @@ export default function ProjectsListPage() {
         containsIgnoreCase(p.summary, search) ||
         containsIgnoreCase(p.sponsor, search);
 
-      const matchesStatus = statusFilter === "ALL" || p.status === statusFilter;
+      const matchesStatus = statusFilter.length === 0 || statusFilter.includes(p.status);
       const matchesType = typeFilter === "ALL" || p.project_type === typeFilter;
 
       return matchesSearch && matchesStatus && matchesType;
@@ -241,7 +251,7 @@ export default function ProjectsListPage() {
   }, [projects]);
 
   function applyStatusFilter(value) {
-    setStatusFilter(value);
+    setStatusFilter(value === "ALL" ? [] : [value]);
     setTypeFilter("ALL");
     setSearch("");
   }
@@ -371,6 +381,7 @@ export default function ProjectsListPage() {
       { label: "Status", value: (p) => STATUS_LABELS[p.status] || p.status || "" },
       { label: "Priority", value: (p) => p.priority || "" },
       { label: "Scope", value: (p) => SCOPE_LABELS[p.scope] || p.scope || "" },
+      { label: "Owning Team", value: (p) => OWNING_TEAM_LABELS[p.owning_team] || p.owning_team || "" },
       { label: "Sponsor", value: (p) => p.sponsor || "" },
       { label: "Start Date", value: (p) => p.start_date || "" },
       { label: "Target End Date", value: (p) => p.target_end_date || "" },
@@ -507,14 +518,48 @@ export default function ProjectsListPage() {
           <FormControl sx={{ minWidth: 200 }}>
             <InputLabel>Status</InputLabel>
             <Select
+              multiple
               value={statusFilter}
               label="Status"
               onChange={(e) => setStatusFilter(e.target.value)}
+              renderValue={(selected) => {
+                if (selected.length === 0) return "All";
+                if (selected.length === Object.keys(STATUS_LABELS).length) return "All";
+                return selected.map((s) => STATUS_LABELS[s] || s).join(", ");
+              }}
             >
-              <MenuItem value="ALL">All</MenuItem>
+              <MenuItem
+                value="SELECT_ALL"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (statusFilter.length === Object.keys(STATUS_LABELS).length) {
+                    setStatusFilter([]);
+                  } else {
+                    setStatusFilter(Object.keys(STATUS_LABELS));
+                  }
+                }}
+              >
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <input
+                    type="checkbox"
+                    checked={statusFilter.length === Object.keys(STATUS_LABELS).length}
+                    readOnly
+                    style={{ margin: 0 }}
+                  />
+                  <span>Select All</span>
+                </Stack>
+              </MenuItem>
               {Object.keys(STATUS_LABELS).map((key) => (
                 <MenuItem key={key} value={key}>
-                  {STATUS_LABELS[key]}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <input
+                      type="checkbox"
+                      checked={statusFilter.includes(key)}
+                      readOnly
+                      style={{ margin: 0 }}
+                    />
+                    <span>{STATUS_LABELS[key]}</span>
+                  </Stack>
                 </MenuItem>
               ))}
             </Select>
@@ -592,6 +637,7 @@ export default function ProjectsListPage() {
                   <TableCell>{STATUS_LABELS[p.status] || p.status}</TableCell>
                   <TableCell>{p.priority || "—"}</TableCell>
                   <TableCell>{SCOPE_LABELS[p.scope] || p.scope || "—"}</TableCell>
+                  <TableCell>{OWNING_TEAM_LABELS[p.owning_team] || p.owning_team || "—"}</TableCell>
                   <TableCell>{p.sponsor || "—"}</TableCell>
                   <TableCell>
                     {(p.start_date || "—") + " → " + (p.target_end_date || "—")}
@@ -613,7 +659,7 @@ export default function ProjectsListPage() {
 
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={9}>
                     <Typography sx={{ py: 2 }}>No projects match your filters.</Typography>
                   </TableCell>
                 </TableRow>
@@ -639,7 +685,7 @@ export default function ProjectsListPage() {
                 <React.Fragment key={bucket.id}>
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={9}
                       sx={{
                         fontWeight: 700,
                         textTransform: "uppercase",
@@ -668,6 +714,7 @@ export default function ProjectsListPage() {
                       <TableCell>{STATUS_LABELS[p.status] || p.status}</TableCell>
                       <TableCell>{p.priority || "—"}</TableCell>
                       <TableCell>{SCOPE_LABELS[p.scope] || p.scope || "—"}</TableCell>
+                      <TableCell>{OWNING_TEAM_LABELS[p.owning_team] || p.owning_team || "—"}</TableCell>
                       <TableCell>{p.sponsor || "—"}</TableCell>
                       <TableCell>
                         {(p.start_date || "—") + " → " + (p.target_end_date || "—")}
