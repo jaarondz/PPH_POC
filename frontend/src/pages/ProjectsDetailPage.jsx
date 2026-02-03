@@ -42,6 +42,8 @@ import CreateProjectTaskDialog from "../components/CreateProjectTaskDialog.jsx";
 import EditProjectTaskDialog from "../components/EditProjectTaskDialog.jsx";
 import CreateProjectMilestoneDialog from "../components/CreateProjectMilestoneDialog.jsx";
 import EditProjectMilestoneDialog from "../components/EditProjectMilestoneDialog.jsx";
+import CreateProjectIssueDialog from "../components/CreateProjectIssueDialog.jsx";
+import EditProjectIssueDialog from "../components/EditProjectIssueDialog.jsx";
 
 const STATUS_LABELS = {
   INTAKE: "Intake",
@@ -84,6 +86,25 @@ const MILESTONE_STATUS_LABELS = {
   COMPLETE: "Complete",
 };
 
+const ISSUE_TYPE_LABELS = {
+  BUG: "Bug",
+  DEFECT: "Defect",
+};
+
+const ISSUE_STATUS_LABELS = {
+  OPEN: "Open",
+  IN_PROGRESS: "In Progress",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+};
+
+const ISSUE_SEVERITY_LABELS = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  CRITICAL: "Critical",
+};
+
 
 function TabPanel({ value, index, children }) {
   if (value !== index) return null;
@@ -113,6 +134,8 @@ export default function ProjectDetailPage() {
   const [accomplishmentLinks, setAccomplishmentLinks] = React.useState([]);
   const [tasks, setTasks] = React.useState([]);
   const [milestones, setMilestones] = React.useState([]);
+  const [issues, setIssues] = React.useState([]);
+  const [docCount, setDocCount] = React.useState(0);
   const [linkAssetDialogOpen, setLinkAssetDialogOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
   const [createAccomplishmentOpen, setCreateAccomplishmentOpen] = React.useState(false);
@@ -120,8 +143,11 @@ export default function ProjectDetailPage() {
   const [editTaskOpen, setEditTaskOpen] = React.useState(false);
   const [createMilestoneOpen, setCreateMilestoneOpen] = React.useState(false);
   const [editMilestoneOpen, setEditMilestoneOpen] = React.useState(false);
+  const [createIssueOpen, setCreateIssueOpen] = React.useState(false);
+  const [editIssueOpen, setEditIssueOpen] = React.useState(false);
   const [selectedTask, setSelectedTask] = React.useState(null);
   const [selectedMilestone, setSelectedMilestone] = React.useState(null);
+  const [selectedIssue, setSelectedIssue] = React.useState(null);
   const [taskStatusFilter, setTaskStatusFilter] = React.useState("ALL");
   const [taskGanttView, setTaskGanttView] = React.useState(ViewMode.Week);
   const [taskTab, setTaskTab] = React.useState(0);
@@ -142,13 +168,18 @@ export default function ProjectDetailPage() {
 
       const al = await apiGet(`/api/project-asset-links/?project=${projectId}`);
       const apl = await apiGet(`/api/accomplishment-project-links/?project=${projectId}`);
+      const dl = await apiGet(
+        `/api/documents/?target_type=PROJECT&target_id=${projectId}`
+      );
 
       const assetLinkRows = Array.isArray(al) ? al : al.results || [];
       const accomplishmentLinkRows = Array.isArray(apl) ? apl : apl.results || [];
+      const docRows = Array.isArray(dl) ? dl : dl.results || [];
 
       setProject(p);
       setAssetLinks(assetLinkRows);
       setAccomplishmentLinks(accomplishmentLinkRows);
+      setDocCount(docRows.length);
     } catch (e) {
       setError(e.message || "Failed to load project detail");
     } finally {
@@ -177,6 +208,16 @@ export default function ProjectDetailPage() {
     }
   }, [projectId]);
 
+  const loadIssues = React.useCallback(async () => {
+    try {
+      const data = await apiGet(`/api/project-issues/?project=${projectId}`);
+      const rows = Array.isArray(data) ? data : data.results || [];
+      setIssues(rows);
+    } catch (e) {
+      setError(e.message || "Failed to load issues");
+    }
+  }, [projectId]);
+
   React.useEffect(() => {
     loadProjectDetail();
   }, [loadProjectDetail]);
@@ -190,6 +231,11 @@ export default function ProjectDetailPage() {
     if (!projectId) return;
     loadMilestones();
   }, [projectId, loadMilestones]);
+
+  React.useEffect(() => {
+    if (!projectId) return;
+    loadIssues();
+  }, [projectId, loadIssues]);
 
   const ganttTasks = React.useMemo(() => {
     const today = new Date();
@@ -217,6 +263,15 @@ export default function ProjectDetailPage() {
       })),
     []
   );
+
+  const issueTaskCounts = React.useMemo(() => {
+    const counts = new Map();
+    tasks.forEach((task) => {
+      if (!task.issue) return;
+      counts.set(task.issue, (counts.get(task.issue) || 0) + 1);
+    });
+    return counts;
+  }, [tasks]);
 
   async function handleBucketDrop(statusKey) {
     if (!draggedTaskId) return;
@@ -468,6 +523,7 @@ export default function ProjectDetailPage() {
                 <TableHead>
                   <TableRow>
                     <TableCell>Description</TableCell>
+                    <TableCell>Issue</TableCell>
                     <TableCell>Assigned To</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Dates</TableCell>
@@ -485,6 +541,7 @@ export default function ProjectDetailPage() {
                     return (
                       <TableRow key={task.id} hover>
                         <TableCell sx={{ fontWeight: 600 }}>{task.description}</TableCell>
+                        <TableCell>{task.issue_detail?.title || "—"}</TableCell>
                         <TableCell>{assignedLabel}</TableCell>
                         <TableCell>
                           {TASK_STATUS_LABELS[task.status] || task.status}
@@ -520,7 +577,7 @@ export default function ProjectDetailPage() {
 
                   {tasks.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5}>
+                      <TableCell colSpan={6}>
                         <Typography sx={{ py: 2 }}>No tasks found.</Typography>
                       </TableCell>
                     </TableRow>
@@ -636,10 +693,100 @@ export default function ProjectDetailPage() {
       </Paper>
 
       <Paper sx={{ p: 2 }}>
+        <Stack spacing={2}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            justifyContent="space-between"
+            alignItems={{ xs: "stretch", sm: "center" }}
+          >
+            <Typography variant="h6">Issues</Typography>
+            <Button variant="contained" onClick={() => setCreateIssueOpen(true)}>
+              Add Issue
+            </Button>
+          </Stack>
+
+          <TableContainer component={Paper}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Severity</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Assigned To</TableCell>
+                  <TableCell align="right">Linked Tasks</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {issues.map((issue) => {
+                  const assigned = issue.assigned_to_detail;
+                  const assignedLabel = assigned
+                    ? [assigned.first_name, assigned.last_name].filter(Boolean).join(" ") ||
+                      assigned.username
+                    : "—";
+                  const taskCount = issueTaskCounts.get(issue.id) || 0;
+
+                  return (
+                    <TableRow key={issue.id} hover>
+                      <TableCell sx={{ fontWeight: 600 }}>{issue.title}</TableCell>
+                      <TableCell>
+                        {ISSUE_TYPE_LABELS[issue.issue_type] || issue.issue_type}
+                      </TableCell>
+                      <TableCell>
+                        {ISSUE_SEVERITY_LABELS[issue.severity] || issue.severity}
+                      </TableCell>
+                      <TableCell>
+                        {ISSUE_STATUS_LABELS[issue.status] || issue.status}
+                      </TableCell>
+                      <TableCell>{assignedLabel}</TableCell>
+                      <TableCell align="right">{taskCount}</TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setSelectedIssue(issue);
+                              setEditIssueOpen(true);
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={async () => {
+                              await apiDelete(`/api/project-issues/${issue.id}/`);
+                              loadIssues();
+                              loadTasks();
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+
+                {issues.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7}>
+                      <Typography sx={{ py: 2 }}>No issues yet.</Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Stack>
+      </Paper>
+
+      <Paper sx={{ p: 2 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label={`Linked Assets (${assetLinks.length})`} />
           <Tab label={`Related Accomplishments (${accomplishmentLinks.length})`} />
-          <Tab label="Documents" />
+          <Tab label={`Documents (${docCount})`} />
         </Tabs>
 
         <TabPanel value={tab} index={0}>
@@ -757,7 +904,11 @@ export default function ProjectDetailPage() {
         </TabPanel>
 
         <TabPanel value={tab} index={2}>
-          <DocumentsPanel targetType="PROJECT" targetId={projectId} />
+          <DocumentsPanel
+            targetType="PROJECT"
+            targetId={projectId}
+            onCountChange={setDocCount}
+          />
         </TabPanel>
       </Paper>
 
@@ -800,6 +951,7 @@ export default function ProjectDetailPage() {
         open={createTaskOpen}
         onClose={() => setCreateTaskOpen(false)}
         projectId={projectId}
+        issues={issues}
         onCreated={() => {
           setCreateTaskOpen(false);
           loadTasks();
@@ -810,9 +962,30 @@ export default function ProjectDetailPage() {
         open={editTaskOpen}
         onClose={() => setEditTaskOpen(false)}
         task={selectedTask}
+        issues={issues}
         onUpdated={() => {
           setEditTaskOpen(false);
           loadTasks();
+        }}
+      />
+
+      <CreateProjectIssueDialog
+        open={createIssueOpen}
+        onClose={() => setCreateIssueOpen(false)}
+        projectId={projectId}
+        onCreated={() => {
+          setCreateIssueOpen(false);
+          loadIssues();
+        }}
+      />
+
+      <EditProjectIssueDialog
+        open={editIssueOpen}
+        onClose={() => setEditIssueOpen(false)}
+        issue={selectedIssue}
+        onUpdated={() => {
+          setEditIssueOpen(false);
+          loadIssues();
         }}
       />
 

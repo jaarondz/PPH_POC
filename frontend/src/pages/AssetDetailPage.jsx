@@ -78,6 +78,7 @@ export default function AssetDetailPage() {
 
   const [projectLinks, setProjectLinks] = React.useState([]);
   const [accomplishmentLinks, setAccomplishmentLinks] = React.useState([]);
+  const [docCount, setDocCount] = React.useState(0);
 
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
@@ -100,13 +101,18 @@ export default function AssetDetailPage() {
       const a = await apiGet(`/api/assets/${assetId}/`);
       const pl = await apiGet(`/api/project-asset-links/?asset=${assetId}`);
       const al = await apiGet(`/api/accomplishment-asset-links/?asset=${assetId}`);
+      const dl = await apiGet(
+        `/api/documents/?target_type=ASSET&target_id=${assetId}`
+      );
 
       const projectRows = Array.isArray(pl) ? pl : pl.results || [];
       const accomplishmentRows = Array.isArray(al) ? al : al.results || [];
+      const docRows = Array.isArray(dl) ? dl : dl.results || [];
 
       setAsset(a);
       setProjectLinks(projectRows);
       setAccomplishmentLinks(accomplishmentRows);
+      setDocCount(docRows.length);
     } catch (e) {
       setError(e.message || "Failed to load asset detail");
     } finally {
@@ -235,7 +241,7 @@ export default function AssetDetailPage() {
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label={`Related Projects (${projectLinks.length})`} />
           <Tab label={`Related Accomplishments (${accomplishmentLinks.length})`} />
-          <Tab label="Documents" />
+          <Tab label={`Documents (${docCount})`} />
         </Tabs>
 
   <TabPanel value={tab} index={0}>
@@ -403,7 +409,11 @@ export default function AssetDetailPage() {
         </TabPanel>
 
         <TabPanel value={tab} index={2}>
-          <DocumentsPanel targetType="ASSET" targetId={assetId} />
+          <DocumentsPanel
+            targetType="ASSET"
+            targetId={assetId}
+            onCountChange={setDocCount}
+          />
         </TabPanel>
 
         <LinkAccomplishmentToAssetDialog

@@ -12,6 +12,8 @@ class DocumentSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "description",
+            "category",
+            "version",
             "file",
             "file_url",
             "original_filename",

@@ -3,7 +3,7 @@ from django.db import models
 from core.models import UUIDModel, TimeStampedModel
 from assets.models import Asset
 from projects.models import Project
-from users.models import OrgUnit
+from users.models import OrgUnit, Team
 
 
 class Accomplishment(UUIDModel, TimeStampedModel):
@@ -30,6 +30,9 @@ class Accomplishment(UUIDModel, TimeStampedModel):
 
     owning_org_unit = models.ForeignKey(
         OrgUnit, on_delete=models.SET_NULL, null=True, blank=True, related_name="accomplishments"
+    )
+    team = models.ForeignKey(
+        Team, on_delete=models.SET_NULL, null=True, blank=True, related_name="accomplishments"
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

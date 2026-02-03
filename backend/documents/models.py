@@ -12,6 +12,12 @@ def document_upload_to(instance: "Document", filename: str) -> str:
 
 
 class Document(UUIDModel, TimeStampedModel):
+    class Category(models.TextChoices):
+        BRD = "BRD", "BRD"
+        ERD = "ERD", "ERD"
+        PROPOSAL = "PROPOSAL", "Proposal"
+        OTHER = "OTHER", "Other"
+
     class TargetType(models.TextChoices):
         ASSET = "ASSET", "Asset"
         PROJECT = "PROJECT", "Project"
@@ -20,6 +26,11 @@ class Document(UUIDModel, TimeStampedModel):
 
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+
+    category = models.CharField(
+        max_length=20, choices=Category.choices, default=Category.OTHER
+    )
+    version = models.DecimalField(max_digits=4, decimal_places=1, default=0.1)
 
     file = models.FileField(upload_to=document_upload_to)
     original_filename = models.CharField(max_length=255, blank=True)

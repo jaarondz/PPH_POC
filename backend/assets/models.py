@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 from core.models import UUIDModel, TimeStampedModel
-from users.models import OrgUnit
+from users.models import OrgUnit, Team
 
 
 class Asset(UUIDModel, TimeStampedModel):
@@ -56,6 +56,9 @@ class Asset(UUIDModel, TimeStampedModel):
     )
     owning_org_unit = models.ForeignKey(
         OrgUnit, on_delete=models.SET_NULL, null=True, blank=True, related_name="assets"
+    )
+    team = models.ForeignKey(
+        Team, on_delete=models.SET_NULL, null=True, blank=True, related_name="assets"
     )
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,

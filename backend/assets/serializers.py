@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import Asset
+from users.serializers import TeamSummarySerializer
 
 User = get_user_model()
 
@@ -18,6 +19,7 @@ class AssetSerializer(serializers.ModelSerializer):
     technical_owner_user_detail = UserSummarySerializer(
         source="technical_owner_user", read_only=True
     )
+    team_detail = TeamSummarySerializer(source="team", read_only=True)
 
     class Meta:
         model = Asset

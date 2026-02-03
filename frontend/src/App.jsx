@@ -33,6 +33,7 @@ import AccomplishmentsExecutivePage from "./pages/AccomplishmentsExecutivePage.j
 import ReportsListPage from "./pages/ReportsListPage.jsx";
 import ReportDetailPage from "./pages/ReportDetailPage.jsx";
 import ReportsExecutivePage from "./pages/ReportsExecutivePage.jsx";
+import TeamsUsersPage from "./pages/TeamsUsersPage.jsx";
 
 function isAuthed() {
   return !!localStorage.getItem("token");
@@ -343,6 +344,10 @@ export default function App({ colorMode = "light", onToggleColorMode }) {
             </Box>
           </Menu>
 
+          <Button color="inherit" component={Link} to="/teams">
+            Teams
+          </Button>
+
           <Box sx={{ flexGrow: 1 }} />
 
           <Tooltip title={colorMode === "dark" ? "Switch to light" : "Switch to dark"}>
@@ -448,6 +453,11 @@ export default function App({ colorMode = "light", onToggleColorMode }) {
               element={
                 authed ? <AccomplishmentDetailPage /> : <Navigate to="/login" replace />
               }
+            />
+
+            <Route
+              path="/teams"
+              element={authed ? <TeamsUsersPage /> : <Navigate to="/login" replace />}
             />
 
             <Route path="*" element={<Typography>Not Found</Typography>} />

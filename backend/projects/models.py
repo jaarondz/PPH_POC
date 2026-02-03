@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import models
 from core.models import UUIDModel, TimeStampedModel
 from assets.models import Asset
-from users.models import OrgUnit
+from users.models import OrgUnit, Team
 
 
 class Project(UUIDModel, TimeStampedModel):
@@ -54,6 +54,9 @@ class Project(UUIDModel, TimeStampedModel):
     )
     owning_org_unit = models.ForeignKey(
         OrgUnit, on_delete=models.SET_NULL, null=True, blank=True, related_name="projects"
+    )
+    team = models.ForeignKey(
+        Team, on_delete=models.SET_NULL, null=True, blank=True, related_name="projects"
     )
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -132,6 +135,65 @@ class ProjectAssetLink(UUIDModel, TimeStampedModel):
         return f"{self.project.name} {self.relationship_type} {self.asset.name}"
 
 
+class ProjectIssue(UUIDModel, TimeStampedModel):
+    class IssueType(models.TextChoices):
+        BUG = "BUG", "Bug"
+        DEFECT = "DEFECT", "Defect"
+
+    class Status(models.TextChoices):
+        OPEN = "OPEN", "Open"
+        IN_PROGRESS = "IN_PROGRESS", "In Progress"
+        RESOLVED = "RESOLVED", "Resolved"
+        CLOSED = "CLOSED", "Closed"
+
+    class Severity(models.TextChoices):
+        LOW = "LOW", "Low"
+        MEDIUM = "MEDIUM", "Medium"
+        HIGH = "HIGH", "High"
+        CRITICAL = "CRITICAL", "Critical"
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="issues")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    issue_type = models.CharField(max_length=10, choices=IssueType.choices)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
+    severity = models.CharField(
+        max_length=10, choices=Severity.choices, default=Severity.MEDIUM
+    )
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_issues",
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_issues_created",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_issues_updated",
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["project"], name="projects_p_project_id_idx"),
+            models.Index(fields=["status"], name="projects_p_status_idx"),
+            models.Index(fields=["severity"], name="projects_p_severity_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.project.name}: {self.title}"
+
+
 class ProjectTask(UUIDModel, TimeStampedModel):
     class Status(models.TextChoices):
         NOT_STARTED = "NOT_STARTED", "Not Started"
@@ -140,6 +202,13 @@ class ProjectTask(UUIDModel, TimeStampedModel):
         DONE = "DONE", "Done"
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks")
+    issue = models.ForeignKey(
+        ProjectIssue,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tasks",
+    )
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

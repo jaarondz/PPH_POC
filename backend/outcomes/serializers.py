@@ -6,6 +6,7 @@ from .models import (
 )
 from assets.models import Asset
 from projects.models import Project
+from users.serializers import TeamSummarySerializer
 
 
 class AssetSummarySerializer(serializers.ModelSerializer):
@@ -61,6 +62,7 @@ class AccomplishmentProjectLinkSerializer(serializers.ModelSerializer):
 class AccomplishmentSerializer(serializers.ModelSerializer):
     asset_links = AccomplishmentAssetLinkSerializer(many=True, read_only=True)
     project_links = AccomplishmentProjectLinkSerializer(many=True, read_only=True)
+    team_detail = TeamSummarySerializer(source="team", read_only=True)
 
     class Meta:
         model = Accomplishment

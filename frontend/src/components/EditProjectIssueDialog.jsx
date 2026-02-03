@@ -16,11 +16,23 @@ import {
 } from "@mui/material";
 import { apiGet, apiPatch } from "../api/client.js";
 
+const ISSUE_TYPE_LABELS = {
+  BUG: "Bug",
+  DEFECT: "Defect",
+};
+
 const STATUS_LABELS = {
-  NOT_STARTED: "Not Started",
+  OPEN: "Open",
   IN_PROGRESS: "In Progress",
-  BLOCKED: "Blocked",
-  DONE: "Done",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+};
+
+const SEVERITY_LABELS = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  CRITICAL: "Critical",
 };
 
 function formatUserLabel(user) {
@@ -29,13 +41,7 @@ function formatUserLabel(user) {
   return name ? `${name} (${user.username})` : user.username;
 }
 
-export default function EditProjectTaskDialog({
-  open,
-  onClose,
-  task,
-  onUpdated,
-  issues = [],
-}) {
+export default function EditProjectIssueDialog({ open, onClose, issue, onUpdated }) {
   const [form, setForm] = React.useState(null);
   const [users, setUsers] = React.useState([]);
   const [loadingUsers, setLoadingUsers] = React.useState(false);
@@ -43,18 +49,18 @@ export default function EditProjectTaskDialog({
   const [saving, setSaving] = React.useState(false);
 
   React.useEffect(() => {
-    if (open && task) {
+    if (open && issue) {
       setForm({
-        description: task.description || "",
-        assigned_to: task.assigned_to || "",
-        issue: task.issue || "",
-        status: task.status || "NOT_STARTED",
-        start_date: task.start_date || "",
-        end_date: task.end_date || "",
+        title: issue.title || "",
+        description: issue.description || "",
+        issue_type: issue.issue_type || "BUG",
+        status: issue.status || "OPEN",
+        severity: issue.severity || "MEDIUM",
+        assigned_to: issue.assigned_to || "",
       });
       setError("");
     }
-  }, [open, task]);
+  }, [open, issue]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -83,33 +89,29 @@ export default function EditProjectTaskDialog({
   }
 
   async function handleSave() {
-    if (!task?.id) return;
+    if (!issue?.id) return;
     setError("");
     setSaving(true);
     try {
       const payload = {
         ...form,
         assigned_to: form.assigned_to || null,
-        issue: form.issue || null,
-        start_date: form.start_date || null,
-        end_date: form.end_date || null,
       };
-      const updated = await apiPatch(`/api/project-tasks/${task.id}/`, payload);
+      const updated = await apiPatch(`/api/project-issues/${issue.id}/`, payload);
       onUpdated?.(updated);
       onClose();
     } catch (e) {
-      setError(e.message || "Failed to update task");
+      setError(e.message || "Failed to update issue");
     } finally {
       setSaving(false);
     }
   }
 
-  const canSubmit =
-    form?.description?.trim() && form?.assigned_to && form?.start_date && form?.end_date;
+  const canSubmit = form?.title?.trim() && form?.issue_type;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Edit Task</DialogTitle>
+      <DialogTitle>Edit Issue</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
@@ -122,17 +124,75 @@ export default function EditProjectTaskDialog({
           ) : null}
 
           <TextField
-            label="Task Description"
+            label="Title"
+            value={form?.title || ""}
+            onChange={(e) => updateField("title", e.target.value)}
+            fullWidth
+            required
+            disabled={saving}
+          />
+
+          <TextField
+            label="Description"
             value={form?.description || ""}
             onChange={(e) => updateField("description", e.target.value)}
             fullWidth
-            required
             multiline
             minRows={3}
             disabled={saving}
           />
 
-          <FormControl fullWidth required>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <FormControl fullWidth>
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={form?.issue_type || "BUG"}
+                label="Type"
+                onChange={(e) => updateField("issue_type", e.target.value)}
+                disabled={saving}
+              >
+                {Object.keys(ISSUE_TYPE_LABELS).map((key) => (
+                  <MenuItem key={key} value={key}>
+                    {ISSUE_TYPE_LABELS[key]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Severity</InputLabel>
+              <Select
+                value={form?.severity || "MEDIUM"}
+                label="Severity"
+                onChange={(e) => updateField("severity", e.target.value)}
+                disabled={saving}
+              >
+                {Object.keys(SEVERITY_LABELS).map((key) => (
+                  <MenuItem key={key} value={key}>
+                    {SEVERITY_LABELS[key]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={form?.status || "OPEN"}
+                label="Status"
+                onChange={(e) => updateField("status", e.target.value)}
+                disabled={saving}
+              >
+                {Object.keys(STATUS_LABELS).map((key) => (
+                  <MenuItem key={key} value={key}>
+                    {STATUS_LABELS[key]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+
+          <FormControl fullWidth>
             <InputLabel>Assigned To</InputLabel>
             <Select
               value={form?.assigned_to || ""}
@@ -140,7 +200,7 @@ export default function EditProjectTaskDialog({
               onChange={(e) => updateField("assigned_to", e.target.value)}
               disabled={saving || loadingUsers}
             >
-              <MenuItem value="">Select a user</MenuItem>
+              <MenuItem value="">Unassigned</MenuItem>
               {users.map((u) => (
                 <MenuItem key={u.id} value={u.id}>
                   {formatUserLabel(u)}
@@ -148,62 +208,6 @@ export default function EditProjectTaskDialog({
               ))}
             </Select>
           </FormControl>
-
-          <FormControl fullWidth>
-            <InputLabel>Linked Issue</InputLabel>
-            <Select
-              value={form?.issue || ""}
-              label="Linked Issue"
-              onChange={(e) => updateField("issue", e.target.value)}
-              disabled={saving}
-            >
-              <MenuItem value="">None</MenuItem>
-              {issues.map((issue) => (
-                <MenuItem key={issue.id} value={issue.id}>
-                  {issue.title}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl fullWidth>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={form?.status || "NOT_STARTED"}
-              label="Status"
-              onChange={(e) => updateField("status", e.target.value)}
-              disabled={saving}
-            >
-              {Object.keys(STATUS_LABELS).map((key) => (
-                <MenuItem key={key} value={key}>
-                  {STATUS_LABELS[key]}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="Start Date"
-              type="date"
-              value={form?.start_date || ""}
-              onChange={(e) => updateField("start_date", e.target.value)}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              disabled={saving}
-              required
-            />
-            <TextField
-              label="End Date"
-              type="date"
-              value={form?.end_date || ""}
-              onChange={(e) => updateField("end_date", e.target.value)}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              disabled={saving}
-              required
-            />
-          </Stack>
         </Stack>
       </DialogContent>
       <DialogActions>

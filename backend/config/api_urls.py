@@ -8,8 +8,9 @@ from projects.views import (
     ProjectAssetLinkViewSet,
     ProjectTaskViewSet,
     ProjectMilestoneViewSet,
+    ProjectIssueViewSet,
 )
-from users.views import UserViewSet
+from users.views import UserViewSet, TeamViewSet, TeamMembershipViewSet
 from outcomes.views import (
     AccomplishmentViewSet,
     AccomplishmentAssetLinkViewSet,
@@ -24,7 +25,10 @@ router.register(r"projects", ProjectViewSet)
 router.register(r"project-asset-links", ProjectAssetLinkViewSet)
 router.register(r"project-tasks", ProjectTaskViewSet)
 router.register(r"project-milestones", ProjectMilestoneViewSet)
+router.register(r"project-issues", ProjectIssueViewSet)
 router.register(r"users", UserViewSet)
+router.register(r"teams", TeamViewSet)
+router.register(r"team-memberships", TeamMembershipViewSet)
 router.register(r"accomplishments", AccomplishmentViewSet)
 router.register(r"reports", ReportViewSet)
 router.register(r"documents", DocumentViewSet)

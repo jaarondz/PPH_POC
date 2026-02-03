@@ -3,7 +3,7 @@ from django.db import models
 from core.models import UUIDModel, TimeStampedModel
 from assets.models import Asset
 from outcomes.models import Accomplishment
-from users.models import OrgUnit
+from users.models import OrgUnit, Team
 
 
 class Report(UUIDModel, TimeStampedModel):
@@ -79,6 +79,9 @@ class Report(UUIDModel, TimeStampedModel):
 
     owning_org_unit = models.ForeignKey(
         OrgUnit, on_delete=models.SET_NULL, null=True, blank=True, related_name="reports"
+    )
+    team = models.ForeignKey(
+        Team, on_delete=models.SET_NULL, null=True, blank=True, related_name="reports"
     )
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,

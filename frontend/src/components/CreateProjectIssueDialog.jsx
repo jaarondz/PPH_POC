@@ -16,20 +16,32 @@ import {
 } from "@mui/material";
 import { apiGet, apiPost } from "../api/client.js";
 
+const ISSUE_TYPE_LABELS = {
+  BUG: "Bug",
+  DEFECT: "Defect",
+};
+
 const STATUS_LABELS = {
-  NOT_STARTED: "Not Started",
+  OPEN: "Open",
   IN_PROGRESS: "In Progress",
-  BLOCKED: "Blocked",
-  DONE: "Done",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+};
+
+const SEVERITY_LABELS = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  CRITICAL: "Critical",
 };
 
 const EMPTY_FORM = {
+  title: "",
   description: "",
+  issue_type: "BUG",
+  status: "OPEN",
+  severity: "MEDIUM",
   assigned_to: "",
-  issue: "",
-  status: "NOT_STARTED",
-  start_date: "",
-  end_date: "",
 };
 
 function formatUserLabel(user) {
@@ -38,13 +50,7 @@ function formatUserLabel(user) {
   return name ? `${name} (${user.username})` : user.username;
 }
 
-export default function CreateProjectTaskDialog({
-  open,
-  onClose,
-  projectId,
-  onCreated,
-  issues = [],
-}) {
+export default function CreateProjectIssueDialog({ open, onClose, projectId, onCreated }) {
   const [form, setForm] = React.useState(EMPTY_FORM);
   const [users, setUsers] = React.useState([]);
   const [loadingUsers, setLoadingUsers] = React.useState(false);
@@ -93,26 +99,22 @@ export default function CreateProjectTaskDialog({
         ...form,
         project: projectId,
         assigned_to: form.assigned_to || null,
-        issue: form.issue || null,
-        start_date: form.start_date || null,
-        end_date: form.end_date || null,
       };
-      const created = await apiPost("/api/project-tasks/", payload);
+      const created = await apiPost("/api/project-issues/", payload);
       onCreated?.(created);
       onClose();
     } catch (e) {
-      setError(e.message || "Failed to create task");
+      setError(e.message || "Failed to create issue");
     } finally {
       setSaving(false);
     }
   }
 
-  const canSubmit =
-    form.description.trim() && form.assigned_to && form.start_date && form.end_date;
+  const canSubmit = form.title.trim() && form.issue_type;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Add Task</DialogTitle>
+      <DialogTitle>Add Issue</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
@@ -125,17 +127,75 @@ export default function CreateProjectTaskDialog({
           ) : null}
 
           <TextField
-            label="Task Description"
+            label="Title"
+            value={form.title}
+            onChange={(e) => updateField("title", e.target.value)}
+            fullWidth
+            required
+            disabled={saving}
+          />
+
+          <TextField
+            label="Description"
             value={form.description}
             onChange={(e) => updateField("description", e.target.value)}
             fullWidth
-            required
             multiline
             minRows={3}
             disabled={saving}
           />
 
-          <FormControl fullWidth required>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <FormControl fullWidth>
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={form.issue_type}
+                label="Type"
+                onChange={(e) => updateField("issue_type", e.target.value)}
+                disabled={saving}
+              >
+                {Object.keys(ISSUE_TYPE_LABELS).map((key) => (
+                  <MenuItem key={key} value={key}>
+                    {ISSUE_TYPE_LABELS[key]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Severity</InputLabel>
+              <Select
+                value={form.severity}
+                label="Severity"
+                onChange={(e) => updateField("severity", e.target.value)}
+                disabled={saving}
+              >
+                {Object.keys(SEVERITY_LABELS).map((key) => (
+                  <MenuItem key={key} value={key}>
+                    {SEVERITY_LABELS[key]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={form.status}
+                label="Status"
+                onChange={(e) => updateField("status", e.target.value)}
+                disabled={saving}
+              >
+                {Object.keys(STATUS_LABELS).map((key) => (
+                  <MenuItem key={key} value={key}>
+                    {STATUS_LABELS[key]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+
+          <FormControl fullWidth>
             <InputLabel>Assigned To</InputLabel>
             <Select
               value={form.assigned_to}
@@ -143,7 +203,7 @@ export default function CreateProjectTaskDialog({
               onChange={(e) => updateField("assigned_to", e.target.value)}
               disabled={saving || loadingUsers}
             >
-              <MenuItem value="">Select a user</MenuItem>
+              <MenuItem value="">Unassigned</MenuItem>
               {users.map((u) => (
                 <MenuItem key={u.id} value={u.id}>
                   {formatUserLabel(u)}
@@ -151,62 +211,6 @@ export default function CreateProjectTaskDialog({
               ))}
             </Select>
           </FormControl>
-
-          <FormControl fullWidth>
-            <InputLabel>Linked Issue</InputLabel>
-            <Select
-              value={form.issue}
-              label="Linked Issue"
-              onChange={(e) => updateField("issue", e.target.value)}
-              disabled={saving}
-            >
-              <MenuItem value="">None</MenuItem>
-              {issues.map((issue) => (
-                <MenuItem key={issue.id} value={issue.id}>
-                  {issue.title}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl fullWidth>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={form.status}
-              label="Status"
-              onChange={(e) => updateField("status", e.target.value)}
-              disabled={saving}
-            >
-              {Object.keys(STATUS_LABELS).map((key) => (
-                <MenuItem key={key} value={key}>
-                  {STATUS_LABELS[key]}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="Start Date"
-              type="date"
-              value={form.start_date}
-              onChange={(e) => updateField("start_date", e.target.value)}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              disabled={saving}
-              required
-            />
-            <TextField
-              label="End Date"
-              type="date"
-              value={form.end_date}
-              onChange={(e) => updateField("end_date", e.target.value)}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              disabled={saving}
-              required
-            />
-          </Stack>
         </Stack>
       </DialogContent>
       <DialogActions>

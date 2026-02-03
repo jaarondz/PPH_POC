@@ -1,12 +1,13 @@
 from rest_framework import viewsets, filters
 from core.audit import AuditedModelViewSetMixin
 from rest_framework.exceptions import PermissionDenied
-from .models import Project, ProjectAssetLink, ProjectTask, ProjectMilestone
+from .models import Project, ProjectAssetLink, ProjectTask, ProjectMilestone, ProjectIssue
 from .serializers import (
     ProjectSerializer,
     ProjectAssetLinkSerializer,
     ProjectTaskSerializer,
     ProjectMilestoneSerializer,
+    ProjectIssueSerializer,
 )
 from users.permissions import ProjectPermission, ProjectChildPermission
 from users.roles import (
@@ -55,7 +56,9 @@ class ProjectAssetLinkViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
 
 
 class ProjectTaskViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
-    queryset = ProjectTask.objects.select_related("project", "assigned_to").all()
+    queryset = ProjectTask.objects.select_related(
+        "project", "assigned_to", "issue"
+    ).all()
     serializer_class = ProjectTaskSerializer
     permission_classes = [ProjectPermission]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -73,6 +76,34 @@ class ProjectTaskViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
             qs = qs.filter(status=status)
 
         return qs
+
+
+class ProjectIssueViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
+    queryset = ProjectIssue.objects.select_related("project", "assigned_to").all()
+    serializer_class = ProjectIssueSerializer
+    permission_classes = [ProjectChildPermission]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["title", "description", "project__name"]
+    ordering_fields = ["severity", "status", "updated_at", "created_at"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        project_id = self.request.query_params.get("project")
+        status = self.request.query_params.get("status")
+        issue_type = self.request.query_params.get("issue_type")
+
+        if project_id:
+            qs = qs.filter(project_id=project_id)
+        if status:
+            qs = qs.filter(status=status)
+        if issue_type:
+            qs = qs.filter(issue_type=issue_type)
+
+        user = self.request.user
+        if can_modify_all(user) or user_in_role(user, ROLE_PORTFOLIO_VIEWER) or user_in_role(user, ROLE_PROJECT_MANAGER):
+            return qs
+
+        return qs.filter(project__assigned_to=user)
 
 
 class ProjectMilestoneViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):

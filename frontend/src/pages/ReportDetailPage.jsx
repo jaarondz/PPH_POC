@@ -103,6 +103,7 @@ export default function ReportDetailPage() {
   const [report, setReport] = React.useState(null);
   const [assetLinks, setAssetLinks] = React.useState([]);
   const [accomplishmentLinks, setAccomplishmentLinks] = React.useState([]);
+  const [docCount, setDocCount] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
 
@@ -126,13 +127,16 @@ export default function ReportDetailPage() {
       const r = await apiGet(`/api/reports/${reportId}/`);
       const al = await apiGet(`/api/report-asset-links/?report=${reportId}`);
       const acl = await apiGet(`/api/report-accomplishment-links/?report=${reportId}`);
+      const dl = await apiGet(`/api/documents/?target_type=REPORT&target_id=${reportId}`);
 
       const assetRows = Array.isArray(al) ? al : al.results || [];
       const accomplishmentRows = Array.isArray(acl) ? acl : acl.results || [];
+      const docRows = Array.isArray(dl) ? dl : dl.results || [];
 
       setReport(r);
       setAssetLinks(assetRows);
       setAccomplishmentLinks(accomplishmentRows);
+      setDocCount(docRows.length);
     } catch (e) {
       setError(e.message || "Failed to load report detail");
     } finally {
@@ -288,7 +292,7 @@ export default function ReportDetailPage() {
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label={`Linked Assets (${assetLinks.length})`} />
           <Tab label={`Linked Accomplishments (${accomplishmentLinks.length})`} />
-          <Tab label="Documents" />
+          <Tab label={`Documents (${docCount})`} />
         </Tabs>
 
         <TabPanel value={tab} index={0}>
@@ -426,7 +430,11 @@ export default function ReportDetailPage() {
         </TabPanel>
 
         <TabPanel value={tab} index={2}>
-          <DocumentsPanel targetType="REPORT" targetId={reportId} />
+          <DocumentsPanel
+            targetType="REPORT"
+            targetId={reportId}
+            onCountChange={setDocCount}
+          />
         </TabPanel>
       </Paper>
 

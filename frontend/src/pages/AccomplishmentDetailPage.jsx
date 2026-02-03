@@ -80,6 +80,7 @@ export default function AccomplishmentDetailPage() {
   const [accomplishment, setAccomplishment] = React.useState(null);
   const [assetLinks, setAssetLinks] = React.useState([]);
   const [projectLinks, setProjectLinks] = React.useState([]);
+  const [docCount, setDocCount] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
 
@@ -103,13 +104,18 @@ export default function AccomplishmentDetailPage() {
       const a = await apiGet(`/api/accomplishments/${accomplishmentId}/`);
       const al = await apiGet(`/api/accomplishment-asset-links/?accomplishment=${accomplishmentId}`);
       const pl = await apiGet(`/api/accomplishment-project-links/?accomplishment=${accomplishmentId}`);
+      const dl = await apiGet(
+        `/api/documents/?target_type=ACCOMPLISHMENT&target_id=${accomplishmentId}`
+      );
 
       const assetRows = Array.isArray(al) ? al : al.results || [];
       const projectRows = Array.isArray(pl) ? pl : pl.results || [];
+      const docRows = Array.isArray(dl) ? dl : dl.results || [];
 
       setAccomplishment(a);
       setAssetLinks(assetRows);
       setProjectLinks(projectRows);
+      setDocCount(docRows.length);
     } catch (e) {
       setError(e.message || "Failed to load accomplishment detail");
     } finally {
@@ -220,7 +226,7 @@ export default function AccomplishmentDetailPage() {
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label={`Linked Assets (${assetLinks.length})`} />
           <Tab label={`Linked Projects (${projectLinks.length})`} />
-          <Tab label="Documents" />
+          <Tab label={`Documents (${docCount})`} />
         </Tabs>
 
         <TabPanel value={tab} index={0}>
@@ -360,7 +366,11 @@ export default function AccomplishmentDetailPage() {
         </TabPanel>
 
         <TabPanel value={tab} index={2}>
-          <DocumentsPanel targetType="ACCOMPLISHMENT" targetId={accomplishmentId} />
+          <DocumentsPanel
+            targetType="ACCOMPLISHMENT"
+            targetId={accomplishmentId}
+            onCountChange={setDocCount}
+          />
         </TabPanel>
       </Paper>
 

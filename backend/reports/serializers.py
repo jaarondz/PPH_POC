@@ -3,6 +3,7 @@ from rest_framework import serializers
 from .models import Report, ReportAssetLink, ReportAccomplishmentLink
 from assets.models import Asset
 from outcomes.models import Accomplishment
+from users.serializers import TeamSummarySerializer
 
 User = get_user_model()
 
@@ -75,6 +76,7 @@ class ReportSerializer(serializers.ModelSerializer):
     developer_user_detail = UserSummarySerializer(
         source="developer_user", read_only=True
     )
+    team_detail = TeamSummarySerializer(source="team", read_only=True)
 
     class Meta:
         model = Report
